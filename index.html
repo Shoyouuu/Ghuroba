@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Shoyounya gabut</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    height:100vh;
+    background:black;
+    font-family:monospace;
+    overflow:hidden;
+}
+
+img{
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    background:black;
+    z-index:0;
+}
+
+.overlay{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.15);
+    z-index:1;
+}
+
+#typing{
+    position:absolute;
+    top:20px;
+    width:100%;
+    text-align:center;
+    font-size:18px;
+    color:#001f5c;
+    text-shadow:0 0 5px #001f5c,0 0 20px #001f5c;
+    z-index:2;
+}
+
+#typing::after{
+    content:"|";
+    animation:blink 0.8s infinite;
+}
+
+@keyframes blink{
+    50%{opacity:0;}
+}
+
+.btn{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:12px;
+    background:#c2185b;
+    color:white;
+    border:none;
+    width:80%;
+    font-weight:bold;
+    z-index:2;
+    opacity:0;
+    transition:1s;
+}
+
+.show{opacity:1;}
+
+.flash{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:white;
+    opacity:0;
+    pointer-events:none;
+}
+
+.flash.on{opacity:0.25;}
+</style>
+</head>
+
+<body>
+
+<div id="flash" class="flash"></div>
+
+<div id="screen">
+    <img id="bg">
+    <div class="overlay"></div>
+    <div id="typing"></div>
+    <button class="btn" id="btn">▶️ PLAY</button>
+</div>
+
+<audio id="music" loop></audio>
+
+<script>
+
+// ================= RANDOM FOTO =================
+const images = [
+"assets/1.png",
+"assets/2.png",
+"assets/3.png",
+"assets/4.png",
+"assets/5.jpg",
+"assets/6.jpeg",
+"assets/7.jpeg",
+"assets/8.png"
+];
+
+const bg = document.getElementById("bg");
+bg.src = images[Math.floor(Math.random()*images.length)];
+
+
+// ================= RANDOM MUSIC =================
+const songs = [
+"assets/1.mp3",
+"assets/2.mp3",
+"assets/3.mp3",
+"assets/4.mp3",
+"assets/5.mp3"
+];
+
+const audio = document.getElementById("music");
+audio.src = songs[Math.floor(Math.random()*songs.length)];
+
+
+// ================= TYPING =================
+let text="ty for throwing MBG💩";
+let el=document.getElementById("typing");
+let btn=document.getElementById("btn");
+
+let i=0;
+
+function type(){
+    if(i<text.length){
+        el.innerHTML+=text.charAt(i);
+        i++;
+        setTimeout(type,70);
+    }else{
+        btn.classList.add("show");
+        setTimeout(()=>{el.style.opacity="0"},1000);
+    }
+}
+setTimeout(type,800);
+
+
+// ================= PLAY MUSIC =================
+let flash=document.getElementById("flash");
+
+btn.onclick=()=>{
+    audio.play().then(()=>{
+        btn.innerText="🔊 SOUND ON";
+        setupAudio();
+    }).catch(()=>{
+        btn.innerText="TAP AGAIN";
+    });
+};
+
+
+// ================= BASS EFFECT =================
+let ctx, analyser, source, data;
+
+function setupAudio(){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    analyser=ctx.createAnalyser();
+
+    source=ctx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    analyser.fftSize=256;
+    data=new Uint8Array(analyser.frequencyBinCount);
+
+    beat();
+}
+
+function beat(){
+    analyser.getByteFrequencyData(data);
+
+    let bass=data.slice(0,10).reduce((a,b)=>a+b,0);
+
+    if(bass>2000){
+        screen.style.transform="scale(1.08)";
+        setTimeout(()=>screen.style.transform="scale(1)",80);
+
+        flash.classList.add("on");
+        setTimeout(()=>flash.classList.remove("on"),60);
+    }
+
+    requestAnimationFrame(beat);
+}
+</script>
+
+</body>
+</html>
