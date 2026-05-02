@@ -6,25 +6,20 @@ REPO="https://github.com/Shoyouuu/Ghuroba.git"
 FOLDER="Ghuroba"
 INSTALL_DIR="$PREFIX/bin"
 
-echo "[*] Tes tes 1 2 1 2 1 2 3..."
+echo "[*] Checking Tes tes..."
 
-if ! command -v git >/dev/null 2>&1; then
-    echo "[*] Installing git..."
-    pkg update -y && pkg install git -y
+command -v git >/dev/null 2>&1 || pkg update -y && pkg install git -y
+
+echo "[*] 1 2 1 2 Tes 1 2 3..."
+
+# update kalau sudah ada, clone kalau belum ada
+if [ -d "$FOLDER/.git" ]; then
+    echo "Remember dude"
+    cd "$FOLDER" && git pull
+else
+    git clone --depth=1 "$REPO"
+    cd "$FOLDER"
 fi
-
-echo "[*] Remember my buddy..."
-
-rm -rf "$FOLDER"
-git clone --depth=1 "$REPO"
-
-# cek hasil clone
-if [ ! -d "$FOLDER" ]; then
-    echo "[✗] Clone failed!"
-    exit 1
-fi
-
-cd "$FOLDER"
 
 echo "[*] Do not be too nyawit..."
 chmod +x ghurob
