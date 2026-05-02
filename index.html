@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Medium Jedug Auto</title>
+<title>MV Pulse Zoom Clean</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -29,15 +29,15 @@ img{
     background:black;
 }
 
-#typing{
+canvas{
     position:absolute;
-    top:20px;
+    bottom:0;
     width:100%;
-    text-align:center;
-    color:#00aaff;
+    height:140px;
+    opacity:0.6;
 }
 
-.btn{
+#btn{
     position:absolute;
     bottom:40px;
     left:50%;
@@ -47,17 +47,6 @@ img{
     color:white;
     border:none;
     width:80%;
-    opacity:0;
-}
-
-.show{opacity:1;}
-
-canvas{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:140px;
-    opacity:0.65;
 }
 </style>
 </head>
@@ -67,8 +56,7 @@ canvas{
 <div id="screen">
     <img id="bg">
     <canvas id="wave"></canvas>
-    <div id="typing"></div>
-    <button class="btn" id="btn">▶️ PLAY</button>
+    <button id="btn">▶️ PLAY</button>
 </div>
 
 <audio id="music" loop></audio>
@@ -79,7 +67,6 @@ canvas{
 let bg=document.getElementById("bg");
 let audio=document.getElementById("music");
 let btn=document.getElementById("btn");
-let typing=document.getElementById("typing");
 let screen=document.getElementById("screen");
 
 // ===== MEDIA =====
@@ -94,40 +81,28 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ===== INIT RANDOM =====
 function loadRandom(){
-    bg.src = images[Math.floor(Math.random()*images.length)];
-    audio.src = songs[Math.floor(Math.random()*songs.length)];
+    bg.src=images[Math.floor(Math.random()*images.length)];
+    audio.src=songs[Math.floor(Math.random()*songs.length)];
 }
 
 loadRandom();
 
-// ===== AUTO NEXT SONG =====
+// auto next lagu + gambar
 audio.addEventListener("ended", ()=>{
     loadRandom();
     audio.play();
 });
 
-// ===== TEXT =====
-let text="MEDIUM JEDUG AUTO MODE";
-let i=0;
-
-function type(){
-    if(i<text.length){
-        typing.innerHTML+=text[i++];
-        setTimeout(type,50);
-    }else{
-        btn.classList.add("show");
-    }
-}
-type();
-
-// ===== AUDIO ENGINE =====
+// ===== AUDIO =====
 let ctx, analyser, source, data;
 let running=false;
 
+// ===== PULSE ZOOM SYSTEM =====
+let pulseZoom = 1;
+let pulseTimer = 0;
+
 // ===== CAMERA =====
-let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 
@@ -135,9 +110,6 @@ let velX=0, velY=0;
 let smoothedBass=0;
 let smoothedEnergy=0;
 let lastEnergy=0;
-
-// ===== COOLDOWN SYSTEM (ANTI SPAM SHAKE) =====
-let kickCooldown=0;
 
 // ===== CANVAS =====
 let canvas=document.getElementById("wave");
@@ -183,19 +155,18 @@ function setupAudio(){
     loop();
 }
 
-// ===== DRAW =====
+// ===== DRAW WAVE =====
 function draw(){
 
     analyser.getByteFrequencyData(data);
 
     c.clearRect(0,0,canvas.width,canvas.height);
 
-    let barWidth = canvas.width / data.length;
+    let barWidth=canvas.width/data.length;
 
     for(let i=0;i<data.length;i++){
-
         let v=data[i];
-        let h=v*0.55;
+        let h=v*0.5;
 
         c.fillStyle="#00d9ff";
         c.fillRect(i*barWidth, canvas.height-h, barWidth-1, h);
@@ -209,59 +180,58 @@ function loop(){
 
     // ===== BASS =====
     let bass=0;
-    for(let i=0;i<5;i++){
-        bass += data[i];
+    for(let i=0;i<4;i++){
+        bass+=data[i];
     }
-    bass = bass / 5;
+    bass=bass/4;
 
     // ===== ENERGY =====
     let energy=0;
     for(let i=0;i<10;i++){
-        energy += data[i];
+        energy+=data[i];
     }
-    energy = energy / 10;
+    energy=energy/10;
 
     // ===== SMOOTH =====
-    smoothedBass += (bass - smoothedBass) * 0.12;
-    smoothedEnergy += (energy - smoothedEnergy) * 0.1;
+    smoothedBass += (bass-smoothedBass)*0.12;
+    smoothedEnergy += (energy-smoothedEnergy)*0.1;
 
-    let diff = smoothedEnergy - lastEnergy;
+    let diff=smoothedEnergy-lastEnergy;
 
-    // ===== COOLDOWN (BIAR JEDUG GAK TERUS) =====
-    if(kickCooldown > 0) kickCooldown--;
+    // ===== BEAT DETECTION =====
+    let kick = smoothedBass > 125 && diff > 10;
 
-    let kick = smoothedBass > 120 && diff > 6 && kickCooldown === 0;
-
-    if(kick){
-        kickCooldown = 18; // jeda antar kick (~medium rhythm)
-
-        // ===== MEDIUM SHAKE =====
-        velX += (Math.random()-0.5) * 0.6;
-        velY += (Math.random()-0.5) * 0.6;
+    // ===== PULSE ZOOM (ONLY ON BEAT) =====
+    if(pulseTimer>0){
+        pulseTimer--;
+    }else{
+        pulseZoom += (1 - pulseZoom) * 0.25; // balik diam cepat
     }
 
-    // ===== CAMERA =====
+    if(kick){
+
+        pulseTimer = 10;   // durasi zoom singkat
+        pulseZoom = 1.35;   // zoom brutal
+
+        // kecil banget shake (opsional, masih aman)
+        velX += (Math.random()-0.5)*0.4;
+        velY += (Math.random()-0.5)*0.4;
+    }
+
     camX += velX;
     camY += velY;
 
-    velX *= 0.78;
-    velY *= 0.78;
+    velX *= 0.8;
+    velY *= 0.8;
 
     camX *= 0.95;
     camY *= 0.95;
 
-    // ===== ZOOM (SMOOTH BREATH) =====
-    let pulse = smoothedEnergy / 255;
-    let wave = Math.sin(Date.now()*0.0025)*0.008;
-
-    let targetZoom = 1 + (pulse * 0.04) + wave;
-
-    zoom += (targetZoom - zoom) * 0.07;
-
+    // ===== APPLY ONLY IMAGE TRANSFORM =====
     screen.style.transform =
-    `translate(${camX}px,${camY}px) scale(${zoom})`;
+    `translate(${camX}px,${camY}px) scale(${pulseZoom})`;
 
-    lastEnergy = smoothedEnergy;
+    lastEnergy=smoothedEnergy;
 
     draw();
 
