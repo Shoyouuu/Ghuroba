@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shoyounya gabut</title>
+<title>MV Canvas Engine</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -11,14 +11,14 @@
 body{
     height:100vh;
     background:black;
-    font-family:monospace;
     overflow:hidden;
+    font-family:monospace;
 }
 
 #screen{
     width:100%;
     height:100%;
-    transform: translateZ(0);
+    transform:translateZ(0);
 }
 
 img{
@@ -61,23 +61,14 @@ img{
     pointer-events:none;
 }
 
-.flash.on{opacity:0.15;}
+.flash.on{opacity:0.12;}
 
-/* ⚡ LIGHTNING EFFECT */
-.lightning{
-    position:fixed;
+canvas{
+    position:absolute;
+    bottom:0;
     width:100%;
-    height:100%;
-    background:
-        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.25), transparent 60%),
-        linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
-    opacity:0;
-    pointer-events:none;
-    mix-blend-mode:screen;
-}
-
-.lightning.on{
-    opacity:1;
+    height:120px;
+    opacity:0.6;
 }
 </style>
 </head>
@@ -85,10 +76,10 @@ img{
 <body>
 
 <div class="flash" id="flash"></div>
-<div class="lightning" id="lightning"></div>
 
 <div id="screen">
     <img id="bg">
+    <canvas id="wave"></canvas>
     <div id="typing"></div>
     <button class="btn" id="btn">▶️ PLAY</button>
 </div>
@@ -98,112 +89,163 @@ img{
 <script>
 
 // ===== ELEMENT =====
-let bg = document.getElementById("bg");
-let audio = document.getElementById("music");
-let btn = document.getElementById("btn");
-let typing = document.getElementById("typing");
-let screen = document.getElementById("screen");
-let flash = document.getElementById("flash");
-let lightning = document.getElementById("lightning");
+let bg=document.getElementById("bg");
+let audio=document.getElementById("music");
+let btn=document.getElementById("btn");
+let typing=document.getElementById("typing");
+let screen=document.getElementById("screen");
+let flash=document.getElementById("flash");
 
 // ===== RANDOM =====
-const images = [
+const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png"
 ];
 
-const songs = [
+const songs=[
 "assets/1.mp3","assets/2.mp3","assets/3.mp3",
 "assets/4.mp3","assets/5.mp3"
 ];
 
-bg.src = images[Math.floor(Math.random()*images.length)];
-audio.src = songs[Math.floor(Math.random()*songs.length)];
+bg.src=images[Math.floor(Math.random()*images.length)];
+audio.src=songs[Math.floor(Math.random()*songs.length)];
 
-// ===== TYPING =====
-let text="ty for throwing MBG💩";
+// ===== TEXT =====
+let text="SPOTIFY MV ENGINE";
 let i=0;
 
 function type(){
     if(i<text.length){
         typing.innerHTML+=text[i++];
-        setTimeout(type,60);
+        setTimeout(type,50);
     }else{
         btn.classList.add("show");
     }
 }
 type();
 
-// ===== PLAY =====
-btn.onclick=()=>{
-    audio.play().then(()=>{
-        setupAudio();
-        btn.innerText="🔊 SOUND ON";
-    }).catch(()=>{
-        btn.innerText="ERROR";
-    });
-};
-
 // ===== AUDIO ENGINE =====
 let ctx, analyser, source, data;
+let running=false;
 
-let scale = 1;
-let targetScale = 1;
+let camX=0, camY=0;
+let velX=0, velY=0;
+let zoom=1;
+let lastEnergy=0;
 
-let tx = 0, ty = 0;
+// ===== WAVE =====
+let canvas=document.getElementById("wave");
+let c=canvas.getContext("2d");
 
+function resize(){
+    canvas.width=innerWidth;
+    canvas.height=120;
+}
+resize();
+addEventListener("resize",resize);
+
+// ===== PLAY =====
+btn.onclick=()=>{
+    audio.play();
+
+    if(!ctx){
+        setupAudio();
+    }else if(ctx.state==="suspended"){
+        ctx.resume();
+    }
+};
+
+// ===== SETUP =====
 function setupAudio(){
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    if(ctx.state === "suspended") ctx.resume();
+    if(running) return;
+    running=true;
 
-    analyser = ctx.createAnalyser();
-    source = ctx.createMediaElementSource(audio);
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    analyser=ctx.createAnalyser();
+    source=ctx.createMediaElementSource(audio);
 
     source.connect(analyser);
     analyser.connect(ctx.destination);
 
-    analyser.fftSize = 128;
-    data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.fftSize=256;
+    data=new Uint8Array(analyser.frequencyBinCount);
 
-    beat();
+    loop();
 }
 
-// ===== LIGHTNING =====
-function lightningFlash(){
-    lightning.classList.add("on");
-    setTimeout(()=>lightning.classList.remove("on"), 60);
+// ===== LIGHT FLASH =====
+function flashFX(){
+    flash.classList.add("on");
+    setTimeout(()=>flash.classList.remove("on"),60);
 }
 
-function beat(){
+// ===== MAIN LOOP (24/7 STABLE) =====
+function loop(){
+
     analyser.getByteFrequencyData(data);
 
-    let bass = 0;
-    for(let i=0;i<6;i++) bass += data[i];
+    let sum=0;
+    for(let i=0;i<10;i++) sum+=data[i];
 
-    if(bass > 1200){
-        targetScale = 1.05;
+    let energy=sum/10;
+    let diff=energy-lastEnergy;
 
-        flash.classList.add("on");
-        setTimeout(()=>flash.classList.remove("on"),60);
+    let beat=diff>8 && energy>60;
+    let drop=energy>140;
 
-        lightningFlash(); // ⚡ PETIR
+    let force=0;
 
-        tx = (Math.random()-0.5)*3;
-        ty = (Math.random()-0.5)*3;
-
-    }else{
-        targetScale = 1;
-        tx *= 0.9;
-        ty *= 0.9;
+    if(drop){
+        force=1.2;
+        flashFX();
+    }else if(beat){
+        force=0.6;
     }
 
-    scale += (targetScale - scale)*0.1;
+    // ===== CAMERA INERTIA =====
+    velX+=(Math.random()-0.5)*force;
+    velY+=(Math.random()-0.5)*force;
 
-    screen.style.transform =
-        `translate(${tx}px,${ty}px) scale(${scale})`;
+    camX+=velX;
+    camY+=velY;
 
-    requestAnimationFrame(beat);
+    velX*=0.85;
+    velY*=0.85;
+
+    camX*=0.92;
+    camY*=0.92;
+
+    let targetZoom=drop?1.12:beat?1.05:1;
+    zoom+=(targetZoom-zoom)*0.07;
+
+    screen.style.transform=
+    `translate(${camX}px,${camY}px) scale(${zoom})`;
+
+    lastEnergy=energy;
+
+    drawWave();
+
+    requestAnimationFrame(loop);
+}
+
+// ===== WAVEFORM =====
+function drawWave(){
+    c.clearRect(0,0,canvas.width,canvas.height);
+
+    c.beginPath();
+
+    let slice=data.length/canvas.width;
+
+    for(let i=0;i<canvas.width;i++){
+        let v=data[Math.floor(i*slice)]/255;
+        let y=v*canvas.height;
+
+        c.lineTo(i,canvas.height-y);
+    }
+
+    c.strokeStyle="#00d9ff";
+    c.stroke();
 }
 
 </script>
