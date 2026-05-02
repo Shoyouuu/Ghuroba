@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Kick Sync</title>
+<title>MV Medium Jedug Auto</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -57,7 +57,7 @@ canvas{
     bottom:0;
     width:100%;
     height:140px;
-    opacity:0.7;
+    opacity:0.65;
 }
 </style>
 </head>
@@ -82,7 +82,7 @@ let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
 let screen=document.getElementById("screen");
 
-// ===== RANDOM =====
+// ===== MEDIA =====
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png",
@@ -94,11 +94,22 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-bg.src=images[Math.floor(Math.random()*images.length)];
-audio.src=songs[Math.floor(Math.random()*songs.length)];
+// ===== INIT RANDOM =====
+function loadRandom(){
+    bg.src = images[Math.floor(Math.random()*images.length)];
+    audio.src = songs[Math.floor(Math.random()*songs.length)];
+}
+
+loadRandom();
+
+// ===== AUTO NEXT SONG =====
+audio.addEventListener("ended", ()=>{
+    loadRandom();
+    audio.play();
+});
 
 // ===== TEXT =====
-let text="KICK SYNC MV MODE";
+let text="MEDIUM JEDUG AUTO MODE";
 let i=0;
 
 function type(){
@@ -120,10 +131,13 @@ let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 
-// ===== SMOOTH VALUES =====
-let smoothedEnergy=0;
+// ===== ENERGY =====
 let smoothedBass=0;
+let smoothedEnergy=0;
 let lastEnergy=0;
+
+// ===== COOLDOWN SYSTEM (ANTI SPAM SHAKE) =====
+let kickCooldown=0;
 
 // ===== CANVAS =====
 let canvas=document.getElementById("wave");
@@ -149,7 +163,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== SETUP AUDIO =====
+// ===== SETUP =====
 function setupAudio(){
 
     if(running) return;
@@ -181,7 +195,7 @@ function draw(){
     for(let i=0;i<data.length;i++){
 
         let v=data[i];
-        let h=v*0.6;
+        let h=v*0.55;
 
         c.fillStyle="#00d9ff";
         c.fillRect(i*barWidth, canvas.height-h, barWidth-1, h);
@@ -193,14 +207,14 @@ function loop(){
 
     analyser.getByteFrequencyData(data);
 
-    // ===== BASS (KICK DETECTION) =====
+    // ===== BASS =====
     let bass=0;
-    for(let i=0;i<4;i++){
+    for(let i=0;i<5;i++){
         bass += data[i];
     }
-    bass = bass / 4;
+    bass = bass / 5;
 
-    // ===== ENERGY (ZOOM BASE) =====
+    // ===== ENERGY =====
     let energy=0;
     for(let i=0;i<10;i++){
         energy += data[i];
@@ -208,38 +222,41 @@ function loop(){
     energy = energy / 10;
 
     // ===== SMOOTH =====
-    smoothedBass += (bass - smoothedBass) * 0.15;
+    smoothedBass += (bass - smoothedBass) * 0.12;
     smoothedEnergy += (energy - smoothedEnergy) * 0.1;
 
     let diff = smoothedEnergy - lastEnergy;
 
-    // ===== KICK DETECTION =====
-    let kick = smoothedBass > 80;
+    // ===== COOLDOWN (BIAR JEDUG GAK TERUS) =====
+    if(kickCooldown > 0) kickCooldown--;
 
-    // ===== CAMERA SHAKE (ONLY KICK) =====
-    let force = kick ? 1.2 : 0.1;
+    let kick = smoothedBass > 120 && diff > 6 && kickCooldown === 0;
 
     if(kick){
-        velX += (Math.random()-0.5) * force;
-        velY += (Math.random()-0.5) * force;
+        kickCooldown = 18; // jeda antar kick (~medium rhythm)
+
+        // ===== MEDIUM SHAKE =====
+        velX += (Math.random()-0.5) * 0.6;
+        velY += (Math.random()-0.5) * 0.6;
     }
 
+    // ===== CAMERA =====
     camX += velX;
     camY += velY;
 
-    velX *= 0.85;
-    velY *= 0.85;
+    velX *= 0.78;
+    velY *= 0.78;
 
-    camX *= 0.92;
-    camY *= 0.92;
+    camX *= 0.95;
+    camY *= 0.95;
 
-    // ===== BASS-DRIVEN ZOOM =====
+    // ===== ZOOM (SMOOTH BREATH) =====
     let pulse = smoothedEnergy / 255;
-    let wave = Math.sin(Date.now() * 0.004) * 0.01;
+    let wave = Math.sin(Date.now()*0.0025)*0.008;
 
-    let targetZoom = 1 + (pulse * 0.08) + wave;
+    let targetZoom = 1 + (pulse * 0.04) + wave;
 
-    zoom += (targetZoom - zoom) * 0.18;
+    zoom += (targetZoom - zoom) * 0.07;
 
     screen.style.transform =
     `translate(${camX}px,${camY}px) scale(${zoom})`;
