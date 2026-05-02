@@ -62,12 +62,30 @@ img{
 }
 
 .flash.on{opacity:0.15;}
+
+/* ⚡ LIGHTNING EFFECT */
+.lightning{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.25), transparent 60%),
+        linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+    opacity:0;
+    pointer-events:none;
+    mix-blend-mode:screen;
+}
+
+.lightning.on{
+    opacity:1;
+}
 </style>
 </head>
 
 <body>
 
 <div class="flash" id="flash"></div>
+<div class="lightning" id="lightning"></div>
 
 <div id="screen">
     <img id="bg">
@@ -86,6 +104,7 @@ let btn = document.getElementById("btn");
 let typing = document.getElementById("typing");
 let screen = document.getElementById("screen");
 let flash = document.getElementById("flash");
+let lightning = document.getElementById("lightning");
 
 // ===== RANDOM =====
 const images = [
@@ -121,7 +140,7 @@ btn.onclick=()=>{
         setupAudio();
         btn.innerText="🔊 SOUND ON";
     }).catch(()=>{
-        btn.innerText="😔😔😔";
+        btn.innerText="ERROR";
     });
 };
 
@@ -150,6 +169,12 @@ function setupAudio(){
     beat();
 }
 
+// ===== LIGHTNING =====
+function lightningFlash(){
+    lightning.classList.add("on");
+    setTimeout(()=>lightning.classList.remove("on"), 60);
+}
+
 function beat(){
     analyser.getByteFrequencyData(data);
 
@@ -161,6 +186,8 @@ function beat(){
 
         flash.classList.add("on");
         setTimeout(()=>flash.classList.remove("on"),60);
+
+        lightningFlash(); // ⚡ PETIR
 
         tx = (Math.random()-0.5)*3;
         ty = (Math.random()-0.5)*3;
