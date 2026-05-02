@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Explosion Engine</title>
+<title>MV Shockwave Engine</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -63,7 +63,7 @@ img{
 
 .flash.on{opacity:0.15;}
 
-/* 💥 EXPLOSION EFFECT */
+/* 💥 EXPLOSION */
 .explosion{
     position:fixed;
     width:120px;
@@ -77,14 +77,28 @@ img{
 }
 
 @keyframes boom{
-    0%{
-        transform:translate(-50%,-50%) scale(0.2);
-        opacity:1;
-    }
-    100%{
-        transform:translate(-50%,-50%) scale(3);
-        opacity:0;
-    }
+    0%{transform:translate(-50%,-50%) scale(0.2);opacity:1;}
+    100%{transform:translate(-50%,-50%) scale(3);opacity:0;}
+}
+
+/* 🌊 SHOCKWAVE */
+.shockwave{
+    position:fixed;
+    left:50%;
+    top:50%;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.8);
+    transform:translate(-50%,-50%) scale(0);
+    pointer-events:none;
+    mix-blend-mode:screen;
+    animation:shock 600ms ease-out forwards;
+}
+
+@keyframes shock{
+    0%{transform:translate(-50%,-50%) scale(0.2);opacity:1;}
+    100%{transform:translate(-50%,-50%) scale(15);opacity:0;}
 }
 </style>
 </head>
@@ -126,7 +140,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="EXPLOSION MV MODE";
+let text="SHOCKWAVE MV MODE";
 let i=0;
 
 function type(){
@@ -181,26 +195,27 @@ function setupAudio(){
     loop();
 }
 
-// ===== EXPLOSION FUNCTION =====
-function explosion(x,y){
+// ===== EFFECTS =====
+function explosion(){
     const el=document.createElement("div");
     el.className="explosion";
-
-    el.style.left=x+"px";
-    el.style.top=y+"px";
-
     document.body.appendChild(el);
-
     setTimeout(()=>el.remove(),450);
 }
 
-// ===== FLASH =====
+function shockwave(){
+    const w=document.createElement("div");
+    w.className="shockwave";
+    document.body.appendChild(w);
+    setTimeout(()=>w.remove(),650);
+}
+
 function flashFX(){
     flash.classList.add("on");
     setTimeout(()=>flash.classList.remove("on"),60);
 }
 
-// ===== MAIN LOOP =====
+// ===== LOOP =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
@@ -218,16 +233,16 @@ function loop(){
 
     if(drop){
         force=1.2;
-        flashFX();
 
-        // 💥 EXPLOSION CENTER
-        explosion(innerWidth/2, innerHeight/2);
+        flashFX();
+        explosion();
+        shockwave();
 
     }else if(beat){
         force=0.6;
     }
 
-    // ===== CAMERA =====
+    // camera inertia
     velX+=(Math.random()-0.5)*force;
     velY+=(Math.random()-0.5)*force;
 
