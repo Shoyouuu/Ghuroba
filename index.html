@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shoyou nya gabut</title>
+<title>MV Kick Sync</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -68,7 +68,7 @@ canvas{
     <img id="bg">
     <canvas id="wave"></canvas>
     <div id="typing"></div>
-    <button class="btn" id="btn">▶️</button>
+    <button class="btn" id="btn">▶️ PLAY</button>
 </div>
 
 <audio id="music" loop></audio>
@@ -98,7 +98,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="TY FOR THROWING MBG💩";
+let text="KICK SYNC MV MODE";
 let i=0;
 
 function type(){
@@ -119,8 +119,11 @@ let running=false;
 let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
-let lastEnergy=0;
+
+// ===== SMOOTH VALUES =====
 let smoothedEnergy=0;
+let smoothedBass=0;
+let lastEnergy=0;
 
 // ===== CANVAS =====
 let canvas=document.getElementById("wave");
@@ -190,24 +193,36 @@ function loop(){
 
     analyser.getByteFrequencyData(data);
 
-    let sum=0;
-    for(let i=0;i<10;i++) sum+=data[i];
+    // ===== BASS (KICK DETECTION) =====
+    let bass=0;
+    for(let i=0;i<4;i++){
+        bass += data[i];
+    }
+    bass = bass / 4;
 
-    let energy=sum/10;
+    // ===== ENERGY (ZOOM BASE) =====
+    let energy=0;
+    for(let i=0;i<10;i++){
+        energy += data[i];
+    }
+    energy = energy / 10;
 
-    // ===== SMOOTH ENERGY (KEY FIX) =====
+    // ===== SMOOTH =====
+    smoothedBass += (bass - smoothedBass) * 0.15;
     smoothedEnergy += (energy - smoothedEnergy) * 0.1;
 
     let diff = smoothedEnergy - lastEnergy;
 
-    // ===== STABLE BEAT DETECTION =====
-    let beat = diff > 10 && smoothedEnergy > 70;
+    // ===== KICK DETECTION =====
+    let kick = smoothedBass > 80;
 
-    // ===== CAMERA MOVEMENT =====
-    let force = beat ? 0.7 : 0.2;
+    // ===== CAMERA SHAKE (ONLY KICK) =====
+    let force = kick ? 1.2 : 0.1;
 
-    velX += (Math.random()-0.5)*force;
-    velY += (Math.random()-0.5)*force;
+    if(kick){
+        velX += (Math.random()-0.5) * force;
+        velY += (Math.random()-0.5) * force;
+    }
 
     camX += velX;
     camY += velY;
@@ -218,13 +233,13 @@ function loop(){
     camX *= 0.92;
     camY *= 0.92;
 
-    // ===== BREATHING ZOOM =====
+    // ===== BASS-DRIVEN ZOOM =====
     let pulse = smoothedEnergy / 255;
-    let wave = Math.sin(Date.now()*0.003)*0.01;
+    let wave = Math.sin(Date.now() * 0.004) * 0.01;
 
-    let targetZoom = 1 + (pulse*0.06) + wave;
+    let targetZoom = 1 + (pulse * 0.08) + wave;
 
-    zoom += (targetZoom - zoom) * 0.08;
+    zoom += (targetZoom - zoom) * 0.18;
 
     screen.style.transform =
     `translate(${camX}px,${camY}px) scale(${zoom})`;
