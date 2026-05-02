@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ziom</title>
+<title>MV Explosion Engine</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -27,14 +27,6 @@ img{
     height:100%;
     object-fit:contain;
     background:black;
-}
-
-canvas{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:120px;
-    opacity:0.6;
 }
 
 #typing{
@@ -69,7 +61,31 @@ canvas{
     pointer-events:none;
 }
 
-.flash.on{opacity:0.12;}
+.flash.on{opacity:0.15;}
+
+/* 💥 EXPLOSION EFFECT */
+.explosion{
+    position:fixed;
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%);
+    transform:translate(-50%,-50%) scale(0);
+    pointer-events:none;
+    mix-blend-mode:screen;
+    animation:boom 400ms ease-out forwards;
+}
+
+@keyframes boom{
+    0%{
+        transform:translate(-50%,-50%) scale(0.2);
+        opacity:1;
+    }
+    100%{
+        transform:translate(-50%,-50%) scale(3);
+        opacity:0;
+    }
+}
 </style>
 </head>
 
@@ -79,7 +95,6 @@ canvas{
 
 <div id="screen">
     <img id="bg">
-    <canvas id="wave"></canvas>
     <div id="typing"></div>
     <button class="btn" id="btn">▶️ PLAY</button>
 </div>
@@ -111,7 +126,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="MV BREATH MODE";
+let text="EXPLOSION MV MODE";
 let i=0;
 
 function type(){
@@ -132,17 +147,6 @@ let camX=0, camY=0;
 let velX=0, velY=0;
 let zoom=1;
 let lastEnergy=0;
-
-// ===== WAVE =====
-let canvas=document.getElementById("wave");
-let c=canvas.getContext("2d");
-
-function resize(){
-    canvas.width=innerWidth;
-    canvas.height=120;
-}
-resize();
-addEventListener("resize",resize);
 
 // ===== PLAY =====
 btn.onclick=()=>{
@@ -177,6 +181,19 @@ function setupAudio(){
     loop();
 }
 
+// ===== EXPLOSION FUNCTION =====
+function explosion(x,y){
+    const el=document.createElement("div");
+    el.className="explosion";
+
+    el.style.left=x+"px";
+    el.style.top=y+"px";
+
+    document.body.appendChild(el);
+
+    setTimeout(()=>el.remove(),450);
+}
+
 // ===== FLASH =====
 function flashFX(){
     flash.classList.add("on");
@@ -202,6 +219,10 @@ function loop(){
     if(drop){
         force=1.2;
         flashFX();
+
+        // 💥 EXPLOSION CENTER
+        explosion(innerWidth/2, innerHeight/2);
+
     }else if(beat){
         force=0.6;
     }
@@ -219,41 +240,19 @@ function loop(){
     camX*=0.92;
     camY*=0.92;
 
-    // ===== 🔥 BREATHING ZOOM FIX =====
-    let pulse = energy / 255;
-    let wave = Math.sin(Date.now()*0.003)*0.01;
+    let pulse=energy/255;
+    let wave=Math.sin(Date.now()*0.003)*0.01;
 
-    let targetZoom = 1 + (pulse*0.08) + wave;
+    let targetZoom=1+(pulse*0.08)+wave;
 
-    zoom += (targetZoom - zoom)*0.08;
+    zoom+=(targetZoom-zoom)*0.08;
 
     screen.style.transform=
     `translate(${camX}px,${camY}px) scale(${zoom})`;
 
     lastEnergy=energy;
 
-    drawWave();
-
     requestAnimationFrame(loop);
-}
-
-// ===== WAVEFORM =====
-function drawWave(){
-    c.clearRect(0,0,canvas.width,canvas.height);
-
-    c.beginPath();
-
-    let slice=data.length/canvas.width;
-
-    for(let i=0;i<canvas.width;i++){
-        let v=data[Math.floor(i*slice)]/255;
-        let y=v*canvas.height;
-
-        c.lineTo(i,canvas.height-y);
-    }
-
-    c.strokeStyle="#00d9ff";
-    c.stroke();
 }
 
 </script>
