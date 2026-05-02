@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Shockwave Engine</title>
+<title>Shoyou nya Gabut</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -52,63 +52,22 @@ img{
 
 .show{opacity:1;}
 
-.flash{
-    position:fixed;
+/* 🎧 FREQUENCY VISUALIZER */
+canvas{
+    position:absolute;
+    bottom:0;
     width:100%;
-    height:100%;
-    background:white;
-    opacity:0;
-    pointer-events:none;
-}
-
-.flash.on{opacity:0.15;}
-
-/* 💥 EXPLOSION */
-.explosion{
-    position:fixed;
-    width:120px;
-    height:120px;
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%);
-    transform:translate(-50%,-50%) scale(0);
-    pointer-events:none;
-    mix-blend-mode:screen;
-    animation:boom 400ms ease-out forwards;
-}
-
-@keyframes boom{
-    0%{transform:translate(-50%,-50%) scale(0.2);opacity:1;}
-    100%{transform:translate(-50%,-50%) scale(3);opacity:0;}
-}
-
-/* 🌊 SHOCKWAVE */
-.shockwave{
-    position:fixed;
-    left:50%;
-    top:50%;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    border:2px solid rgba(255,255,255,0.8);
-    transform:translate(-50%,-50%) scale(0);
-    pointer-events:none;
-    mix-blend-mode:screen;
-    animation:shock 600ms ease-out forwards;
-}
-
-@keyframes shock{
-    0%{transform:translate(-50%,-50%) scale(0.2);opacity:1;}
-    100%{transform:translate(-50%,-50%) scale(15);opacity:0;}
+    height:140px;
+    opacity:0.7;
 }
 </style>
 </head>
 
 <body>
 
-<div class="flash" id="flash"></div>
-
 <div id="screen">
     <img id="bg">
+    <canvas id="wave"></canvas>
     <div id="typing"></div>
     <button class="btn" id="btn">▶️ PLAY</button>
 </div>
@@ -122,8 +81,6 @@ let bg=document.getElementById("bg");
 let audio=document.getElementById("music");
 let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
-let screen=document.getElementById("screen");
-let flash=document.getElementById("flash");
 
 // ===== RANDOM =====
 const images=[
@@ -140,7 +97,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="SHOCKWAVE MV MODE";
+let text="FREQUENCY MV MODE";
 let i=0;
 
 function type(){
@@ -157,10 +114,22 @@ type();
 let ctx, analyser, source, data;
 let running=false;
 
+let screen=document.getElementById("screen");
+let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
-let zoom=1;
 let lastEnergy=0;
+
+// ===== CANVAS =====
+let canvas=document.getElementById("wave");
+let c=canvas.getContext("2d");
+
+function resize(){
+    canvas.width=innerWidth;
+    canvas.height=140;
+}
+resize();
+addEventListener("resize",resize);
 
 // ===== PLAY =====
 btn.onclick=()=>{
@@ -195,27 +164,26 @@ function setupAudio(){
     loop();
 }
 
-// ===== EFFECTS =====
-function explosion(){
-    const el=document.createElement("div");
-    el.className="explosion";
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),450);
+// ===== DRAW FREQUENCY =====
+function draw(){
+
+    analyser.getByteFrequencyData(data);
+
+    c.clearRect(0,0,canvas.width,canvas.height);
+
+    let barWidth = canvas.width / data.length;
+
+    for(let i=0;i<data.length;i++){
+
+        let v=data[i];
+        let h=v*0.6;
+
+        c.fillStyle="#00d9ff";
+        c.fillRect(i*barWidth, canvas.height-h, barWidth-1, h);
+    }
 }
 
-function shockwave(){
-    const w=document.createElement("div");
-    w.className="shockwave";
-    document.body.appendChild(w);
-    setTimeout(()=>w.remove(),650);
-}
-
-function flashFX(){
-    flash.classList.add("on");
-    setTimeout(()=>flash.classList.remove("on"),60);
-}
-
-// ===== LOOP =====
+// ===== LOOP (MV ENGINE) =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
@@ -227,22 +195,10 @@ function loop(){
     let diff=energy-lastEnergy;
 
     let beat=diff>8 && energy>60;
-    let drop=energy>140;
 
-    let force=0;
+    // ===== CAMERA MOVEMENT =====
+    let force=beat?0.8:0.2;
 
-    if(drop){
-        force=1.2;
-
-        flashFX();
-        explosion();
-        shockwave();
-
-    }else if(beat){
-        force=0.6;
-    }
-
-    // camera inertia
     velX+=(Math.random()-0.5)*force;
     velY+=(Math.random()-0.5)*force;
 
@@ -255,10 +211,11 @@ function loop(){
     camX*=0.92;
     camY*=0.92;
 
+    // ===== BREATHING ZOOM =====
     let pulse=energy/255;
     let wave=Math.sin(Date.now()*0.003)*0.01;
 
-    let targetZoom=1+(pulse*0.08)+wave;
+    let targetZoom=1+(pulse*0.06)+wave;
 
     zoom+=(targetZoom-zoom)*0.08;
 
@@ -266,6 +223,8 @@ function loop(){
     `translate(${camX}px,${camY}px) scale(${zoom})`;
 
     lastEnergy=energy;
+
+    draw();
 
     requestAnimationFrame(loop);
 }
