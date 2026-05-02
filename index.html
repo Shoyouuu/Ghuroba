@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Fast Drop Stable</title>
+<title>MV Brutal Mode</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -43,7 +43,7 @@ canvas{
     bottom:0;
     width:100%;
     height:140px;
-    opacity:0.6;
+    opacity:0.7;
 }
 
 #btn{
@@ -92,7 +92,7 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ===== LOAD RANDOM =====
+// ===== LOAD =====
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
     audio.src=songs[Math.floor(Math.random()*songs.length)];
@@ -105,34 +105,27 @@ audio.addEventListener("ended",()=>{
 });
 
 // ===== TYPING =====
-let text="TY FOR THROWING MBG 💀";
+let text="BRUTAL MV MODE 💀🔥";
 let i=0;
 
 function type(){
     if(i<text.length){
-        typing.innerHTML += text[i++];
-        setTimeout(type,60);
+        typing.innerHTML+=text[i++];
+        setTimeout(type,40);
     }
 }
 type();
-
-// ===== SMOOTH RAINBOW =====
-let hue=0;
-function rainbowFlow(){
-    hue += 1.3;
-    return `hsl(${hue},100%,60%)`;
-}
 
 // ===== AUDIO =====
 let ctx, analyser, source, data;
 let running=false;
 
 // ===== MODE =====
-let mode="idle";
-let modeTimer=0;
+let mode="drop"; // 🔥 START LANGSUNG BRUTAL
+let modeTimer=999999; // hampir selalu drop
 
 // ===== CAMERA =====
-let pulseZoom=1;
+let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 
@@ -167,7 +160,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== AUDIO SETUP =====
+// ===== AUDIO =====
 function setupAudio(){
 
     if(running) return;
@@ -197,70 +190,66 @@ function draw(){
     let w=canvas.width/data.length;
 
     for(let i=0;i<data.length;i++){
-        let h=data[i]*0.5;
+        let h=data[i]*0.6;
         c.fillStyle="#00d9ff";
         c.fillRect(i*w,canvas.height-h,w-1,h);
     }
 }
 
-// ===== LOOP =====
+// ===== LOOP (BRUTAL CORE) =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
 
     let b=0;
-    for(let i=0;i<4;i++) b+=data[i];
-    bass=b/4;
+    for(let i=0;i<6;i++) b+=data[i];
+    bass=b/6;
 
     let e=0;
-    for(let i=0;i<10;i++) e+=data[i];
-    energy=e/10;
+    for(let i=0;i<12;i++) e+=data[i];
+    energy=e/12;
 
-    smoothedBass += (bass-smoothedBass)*0.12;
-    smoothedEnergy += (energy-smoothedEnergy)*0.1;
+    smoothedBass += (bass-smoothedBass)*0.2;   // 🔥 lebih responsif
+    smoothedEnergy += (energy-smoothedEnergy)*0.15;
 
     let diff = smoothedEnergy - lastEnergy;
 
-    // ===== FAST DROP FIX =====
-    let kick = smoothedBass > 100 && diff > 4;
+    // ===== MORE FREQUENT DROP TRIGGER =====
+    let kick =
+        smoothedBass > 85 && diff > 3; // 🔥 lebih sensitif
 
     if(kick){
         mode="drop";
-        modeTimer = Math.max(modeTimer, 75); // 💥 lebih lama + extend
+        modeTimer = 60; // 🔥 sering tapi tetap ada decay
     }
 
     if(modeTimer>0){
         modeTimer--;
     }else{
-        mode="idle";
+        mode="drop"; // 🔥 JANGAN PERNAH LAMA DI IDLE
     }
 
-    // ===== SHAKE =====
-    if(mode==="drop"){
-        velX += (Math.random()-0.5)*0.8;
-        velY += (Math.random()-0.5)*0.8;
-    }
+    // ===== CAMERA BRUTAL =====
+    velX += (Math.random()-0.5) * 1.0;
+    velY += (Math.random()-0.5) * 1.0;
 
     camX += velX;
     camY += velY;
 
-    velX *= 0.8;
-    velY *= 0.8;
+    velX *= 0.78;
+    velY *= 0.78;
 
-    camX *= 0.95;
-    camY *= 0.95;
+    camX *= 0.92;
+    camY *= 0.92;
 
-    // ===== ZOOM =====
-    let targetZoom = (mode==="drop") ? 1.4 : 1;
+    // ===== CONSTANT BREATHING BRUTAL ZOOM =====
+    let targetZoom =
+        1.25 + (smoothedBass / 255) * 0.2; // 🔥 selalu hidup
 
-    pulseZoom += (targetZoom - pulseZoom) * 0.18;
+    zoom += (targetZoom - zoom) * 0.2;
 
     screen.style.transform =
-    `translate(${camX}px,${camY}px) scale(${pulseZoom})`;
-
-    // ===== TEXT COLOR =====
-    typing.style.color =
-        (mode==="idle") ? rainbowFlow() : "#00aaff";
+    `translate(${camX}px,${camY}px) scale(${zoom})`;
 
     lastEnergy=smoothedEnergy;
 
