@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shoyou nya Gabut</title>
+<title>MV Clean</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -52,7 +52,6 @@ img{
 
 .show{opacity:1;}
 
-/* 🎧 FREQUENCY VISUALIZER */
 canvas{
     position:absolute;
     bottom:0;
@@ -81,12 +80,14 @@ let bg=document.getElementById("bg");
 let audio=document.getElementById("music");
 let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
+let screen=document.getElementById("screen");
 
-// ===== RANDOM =====
+// ===== RANDOM IMAGES (+9.png) =====
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
-"assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png"
- ];
+"assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png",
+"assets/9.png"
+];
 
 const songs=[
 "assets/1.mp3","assets/2.mp3","assets/3.mp3",
@@ -97,7 +98,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="TY FOR THROWING MBG💩";
+let text="MV CLEAN FREQUENCY MODE";
 let i=0;
 
 function type(){
@@ -114,7 +115,6 @@ type();
 let ctx, analyser, source, data;
 let running=false;
 
-let screen=document.getElementById("screen");
 let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
@@ -144,7 +144,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== SETUP =====
+// ===== AUDIO SETUP =====
 function setupAudio(){
 
     if(running) return;
@@ -183,7 +183,7 @@ function draw(){
     }
 }
 
-// ===== LOOP (MV ENGINE) =====
+// ===== LOOP =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
@@ -196,7 +196,7 @@ function loop(){
 
     let beat=diff>8 && energy>60;
 
-    // ===== CAMERA MOVEMENT =====
+    // ===== CAMERA =====
     let force=beat?0.8:0.2;
 
     velX+=(Math.random()-0.5)*force;
@@ -211,7 +211,7 @@ function loop(){
     camX*=0.92;
     camY*=0.92;
 
-    // ===== BREATHING ZOOM =====
+    // ===== BREATH ZOOM =====
     let pulse=energy/255;
     let wave=Math.sin(Date.now()*0.003)*0.01;
 
