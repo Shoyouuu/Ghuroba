@@ -14,8 +14,15 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 echo "[*] Remember my buddy..."
+
 rm -rf "$FOLDER"
 git clone --depth=1 "$REPO"
+
+# cek hasil clone
+if [ ! -d "$FOLDER" ]; then
+    echo "[✗] Clone failed!"
+    exit 1
+fi
 
 cd "$FOLDER"
 
