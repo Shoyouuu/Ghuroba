@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Smooth Rainbow Flow</title>
+<title>MV Fast Drop Stable</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -63,13 +63,10 @@ canvas{
 <body>
 
 <div id="screen">
-
     <div id="typing"></div>
-
     <img id="bg">
     <canvas id="wave"></canvas>
     <button id="btn">▶️ PLAY</button>
-
 </div>
 
 <audio id="music" loop></audio>
@@ -95,7 +92,7 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ===== LOAD =====
+// ===== LOAD RANDOM =====
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
     audio.src=songs[Math.floor(Math.random()*songs.length)];
@@ -119,12 +116,11 @@ function type(){
 }
 type();
 
-// ===== SMOOTH RAINBOW FLOW =====
-let hue = 0;
-
+// ===== SMOOTH RAINBOW =====
+let hue=0;
 function rainbowFlow(){
-    hue += 1.2; // smooth slow flow
-    return `hsl(${hue}, 100%, 60%)`;
+    hue += 1.3;
+    return `hsl(${hue},100%,60%)`;
 }
 
 // ===== AUDIO =====
@@ -225,12 +221,12 @@ function loop(){
 
     let diff = smoothedEnergy - lastEnergy;
 
-    // ===== DROP DETECT =====
-    let kick = smoothedBass > 110 && diff > 6;
+    // ===== FAST DROP FIX =====
+    let kick = smoothedBass > 100 && diff > 4;
 
-    if(kick && mode==="idle"){
+    if(kick){
         mode="drop";
-        modeTimer=40;
+        modeTimer = Math.max(modeTimer, 75); // 💥 lebih lama + extend
     }
 
     if(modeTimer>0){
@@ -255,18 +251,16 @@ function loop(){
     camY *= 0.95;
 
     // ===== ZOOM =====
-    let targetZoom = (mode==="drop") ? 1.35 : 1;
+    let targetZoom = (mode==="drop") ? 1.4 : 1;
+
     pulseZoom += (targetZoom - pulseZoom) * 0.18;
 
     screen.style.transform =
     `translate(${camX}px,${camY}px) scale(${pulseZoom})`;
 
-    // ===== TEXT COLOR MODE =====
-    if(mode === "idle"){
-        typing.style.color = rainbowFlow(); // 🌈 smooth flow
-    }else{
-        typing.style.color = "#00aaff"; // 💥 drop clean
-    }
+    // ===== TEXT COLOR =====
+    typing.style.color =
+        (mode==="idle") ? rainbowFlow() : "#00aaff";
 
     lastEnergy=smoothedEnergy;
 
