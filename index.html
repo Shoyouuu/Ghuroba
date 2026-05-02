@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Canvas Engine</title>
+<title>ziom</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -27,6 +27,14 @@ img{
     height:100%;
     object-fit:contain;
     background:black;
+}
+
+canvas{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:120px;
+    opacity:0.6;
 }
 
 #typing{
@@ -62,14 +70,6 @@ img{
 }
 
 .flash.on{opacity:0.12;}
-
-canvas{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:120px;
-    opacity:0.6;
-}
 </style>
 </head>
 
@@ -111,7 +111,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="SPOTIFY MV ENGINE";
+let text="MV BREATH MODE";
 let i=0;
 
 function type(){
@@ -153,6 +153,8 @@ btn.onclick=()=>{
     }else if(ctx.state==="suspended"){
         ctx.resume();
     }
+
+    btn.style.display="none";
 };
 
 // ===== SETUP =====
@@ -162,6 +164,7 @@ function setupAudio(){
     running=true;
 
     ctx=new (window.AudioContext||window.webkitAudioContext)();
+
     analyser=ctx.createAnalyser();
     source=ctx.createMediaElementSource(audio);
 
@@ -174,13 +177,13 @@ function setupAudio(){
     loop();
 }
 
-// ===== LIGHT FLASH =====
+// ===== FLASH =====
 function flashFX(){
     flash.classList.add("on");
     setTimeout(()=>flash.classList.remove("on"),60);
 }
 
-// ===== MAIN LOOP (24/7 STABLE) =====
+// ===== MAIN LOOP =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
@@ -203,7 +206,7 @@ function loop(){
         force=0.6;
     }
 
-    // ===== CAMERA INERTIA =====
+    // ===== CAMERA =====
     velX+=(Math.random()-0.5)*force;
     velY+=(Math.random()-0.5)*force;
 
@@ -216,8 +219,13 @@ function loop(){
     camX*=0.92;
     camY*=0.92;
 
-    let targetZoom=drop?1.12:beat?1.05:1;
-    zoom+=(targetZoom-zoom)*0.07;
+    // ===== 🔥 BREATHING ZOOM FIX =====
+    let pulse = energy / 255;
+    let wave = Math.sin(Date.now()*0.003)*0.01;
+
+    let targetZoom = 1 + (pulse*0.08) + wave;
+
+    zoom += (targetZoom - zoom)*0.08;
 
     screen.style.transform=
     `translate(${camX}px,${camY}px) scale(${zoom})`;
