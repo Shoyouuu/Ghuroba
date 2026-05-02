@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Brutal Mode</title>
+<title>Cinematic MV Engine</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -19,6 +19,7 @@ body{
     width:100%;
     height:100%;
     transform:translateZ(0);
+    will-change: transform;
 }
 
 img{
@@ -43,7 +44,7 @@ canvas{
     bottom:0;
     width:100%;
     height:140px;
-    opacity:0.7;
+    opacity:0.6;
 }
 
 #btn{
@@ -92,7 +93,7 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ===== LOAD =====
+// ===== LOAD RANDOM =====
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
     audio.src=songs[Math.floor(Math.random()*songs.length)];
@@ -105,13 +106,13 @@ audio.addEventListener("ended",()=>{
 });
 
 // ===== TYPING =====
-let text="BRUTAL MV MODE 💀🔥";
+let text="CINEMATIC MV MODE";
 let i=0;
 
 function type(){
     if(i<text.length){
-        typing.innerHTML+=text[i++];
-        setTimeout(type,40);
+        typing.innerHTML += text[i++];
+        setTimeout(type,60);
     }
 }
 type();
@@ -121,11 +122,10 @@ let ctx, analyser, source, data;
 let running=false;
 
 // ===== MODE =====
-let mode="drop"; // 🔥 START LANGSUNG BRUTAL
-let modeTimer=999999; // hampir selalu drop
+let mode="idle";
+let modeTimer=0;
 
 // ===== CAMERA =====
-let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 
@@ -160,7 +160,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== AUDIO =====
+// ===== AUDIO SETUP =====
 function setupAudio(){
 
     if(running) return;
@@ -190,66 +190,74 @@ function draw(){
     let w=canvas.width/data.length;
 
     for(let i=0;i<data.length;i++){
-        let h=data[i]*0.6;
+        let h=data[i]*0.5;
         c.fillStyle="#00d9ff";
         c.fillRect(i*w,canvas.height-h,w-1,h);
     }
 }
 
-// ===== LOOP (BRUTAL CORE) =====
+// ===== LOOP =====
 function loop(){
 
     analyser.getByteFrequencyData(data);
 
     let b=0;
-    for(let i=0;i<6;i++) b+=data[i];
-    bass=b/6;
+    for(let i=0;i<5;i++) b+=data[i];
+    bass=b/5;
 
     let e=0;
-    for(let i=0;i<12;i++) e+=data[i];
-    energy=e/12;
+    for(let i=0;i<10;i++) e+=data[i];
+    energy=e/10;
 
-    smoothedBass += (bass-smoothedBass)*0.2;   // 🔥 lebih responsif
-    smoothedEnergy += (energy-smoothedEnergy)*0.15;
+    smoothedBass += (bass-smoothedBass)*0.12;
+    smoothedEnergy += (energy-smoothedEnergy)*0.1;
 
     let diff = smoothedEnergy - lastEnergy;
 
-    // ===== MORE FREQUENT DROP TRIGGER =====
-    let kick =
-        smoothedBass > 85 && diff > 3; // 🔥 lebih sensitif
+    // ===== BEAT DETECT =====
+    let kick = smoothedBass > 95 && diff > 4;
 
     if(kick){
         mode="drop";
-        modeTimer = 60; // 🔥 sering tapi tetap ada decay
+        modeTimer=50;
+
+        // 💡 light flash (no zoom)
+        document.body.style.filter="brightness(1.2)";
+        setTimeout(()=>document.body.style.filter="none",60);
     }
 
     if(modeTimer>0){
         modeTimer--;
     }else{
-        mode="drop"; // 🔥 JANGAN PERNAH LAMA DI IDLE
+        mode="idle";
     }
 
-    // ===== CAMERA BRUTAL =====
-    velX += (Math.random()-0.5) * 1.0;
-    velY += (Math.random()-0.5) * 1.0;
+    // ===== CAMERA INERTIA =====
+    let force = (mode==="drop") ? 0.7 : 0.12;
+
+    velX += (Math.random()-0.5)*force;
+    velY += (Math.random()-0.5)*force;
 
     camX += velX;
     camY += velY;
 
-    velX *= 0.78;
-    velY *= 0.78;
+    velX *= 0.85;
+    velY *= 0.85;
 
-    camX *= 0.92;
-    camY *= 0.92;
+    camX *= 0.94;
+    camY *= 0.94;
 
-    // ===== CONSTANT BREATHING BRUTAL ZOOM =====
-    let targetZoom =
-        1.25 + (smoothedBass / 255) * 0.2; // 🔥 selalu hidup
+    // ===== CINEMATIC SKEW =====
+    let skew = Math.sin(Date.now()*0.002) * 1.2;
 
-    zoom += (targetZoom - zoom) * 0.2;
+    screen.style.transform = `
+    translate(${camX}px,${camY}px)
+    skewX(${skew}deg)
+    `;
 
-    screen.style.transform =
-    `translate(${camX}px,${camY}px) scale(${zoom})`;
+    // ===== TEXT COLOR =====
+    typing.style.color =
+        (mode==="idle") ? `hsl(${Date.now()*0.05 % 360},100%,60%)` : "#00aaff";
 
     lastEnergy=smoothedEnergy;
 
