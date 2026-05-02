@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Clean</title>
+<title>MV Smooth Rhythm</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -82,7 +82,7 @@ let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
 let screen=document.getElementById("screen");
 
-// ===== RANDOM IMAGES (+9.png) =====
+// ===== RANDOM =====
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png",
@@ -98,7 +98,7 @@ bg.src=images[Math.floor(Math.random()*images.length)];
 audio.src=songs[Math.floor(Math.random()*songs.length)];
 
 // ===== TEXT =====
-let text="MV CLEAN FREQUENCY MODE";
+let text="SMOOTH RHYTHM MV MODE";
 let i=0;
 
 function type(){
@@ -115,10 +115,12 @@ type();
 let ctx, analyser, source, data;
 let running=false;
 
+// ===== CAMERA =====
 let zoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 let lastEnergy=0;
+let smoothedEnergy=0;
 
 // ===== CANVAS =====
 let canvas=document.getElementById("wave");
@@ -144,7 +146,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== AUDIO SETUP =====
+// ===== SETUP AUDIO =====
 function setupAudio(){
 
     if(running) return;
@@ -164,7 +166,7 @@ function setupAudio(){
     loop();
 }
 
-// ===== DRAW FREQUENCY =====
+// ===== DRAW =====
 function draw(){
 
     analyser.getByteFrequencyData(data);
@@ -192,37 +194,42 @@ function loop(){
     for(let i=0;i<10;i++) sum+=data[i];
 
     let energy=sum/10;
-    let diff=energy-lastEnergy;
 
-    let beat=diff>8 && energy>60;
+    // ===== SMOOTH ENERGY (KEY FIX) =====
+    smoothedEnergy += (energy - smoothedEnergy) * 0.1;
 
-    // ===== CAMERA =====
-    let force=beat?0.8:0.2;
+    let diff = smoothedEnergy - lastEnergy;
 
-    velX+=(Math.random()-0.5)*force;
-    velY+=(Math.random()-0.5)*force;
+    // ===== STABLE BEAT DETECTION =====
+    let beat = diff > 10 && smoothedEnergy > 70;
 
-    camX+=velX;
-    camY+=velY;
+    // ===== CAMERA MOVEMENT =====
+    let force = beat ? 0.7 : 0.2;
 
-    velX*=0.85;
-    velY*=0.85;
+    velX += (Math.random()-0.5)*force;
+    velY += (Math.random()-0.5)*force;
 
-    camX*=0.92;
-    camY*=0.92;
+    camX += velX;
+    camY += velY;
 
-    // ===== BREATH ZOOM =====
-    let pulse=energy/255;
-    let wave=Math.sin(Date.now()*0.003)*0.01;
+    velX *= 0.85;
+    velY *= 0.85;
 
-    let targetZoom=1+(pulse*0.06)+wave;
+    camX *= 0.92;
+    camY *= 0.92;
 
-    zoom+=(targetZoom-zoom)*0.08;
+    // ===== BREATHING ZOOM =====
+    let pulse = smoothedEnergy / 255;
+    let wave = Math.sin(Date.now()*0.003)*0.01;
 
-    screen.style.transform=
+    let targetZoom = 1 + (pulse*0.06) + wave;
+
+    zoom += (targetZoom - zoom) * 0.08;
+
+    screen.style.transform =
     `translate(${camX}px,${camY}px) scale(${zoom})`;
 
-    lastEnergy=energy;
+    lastEnergy = smoothedEnergy;
 
     draw();
 
