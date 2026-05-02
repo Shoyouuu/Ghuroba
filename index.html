@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MV Pulse Zoom Clean</title>
+<title>MV Smooth Rainbow Flow</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -27,6 +27,15 @@ img{
     height:100%;
     object-fit:contain;
     background:black;
+}
+
+#typing{
+    position:absolute;
+    top:20px;
+    width:100%;
+    text-align:center;
+    font-size:14px;
+    z-index:10;
 }
 
 canvas{
@@ -54,9 +63,13 @@ canvas{
 <body>
 
 <div id="screen">
+
+    <div id="typing"></div>
+
     <img id="bg">
     <canvas id="wave"></canvas>
     <button id="btn">▶️ PLAY</button>
+
 </div>
 
 <audio id="music" loop></audio>
@@ -67,6 +80,7 @@ canvas{
 let bg=document.getElementById("bg");
 let audio=document.getElementById("music");
 let btn=document.getElementById("btn");
+let typing=document.getElementById("typing");
 let screen=document.getElementById("screen");
 
 // ===== MEDIA =====
@@ -81,32 +95,54 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
+// ===== LOAD =====
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
     audio.src=songs[Math.floor(Math.random()*songs.length)];
 }
-
 loadRandom();
 
-// auto next lagu + gambar
-audio.addEventListener("ended", ()=>{
+audio.addEventListener("ended",()=>{
     loadRandom();
     audio.play();
 });
+
+// ===== TYPING =====
+let text="TY FOR THROWING MBG 💀";
+let i=0;
+
+function type(){
+    if(i<text.length){
+        typing.innerHTML += text[i++];
+        setTimeout(type,60);
+    }
+}
+type();
+
+// ===== SMOOTH RAINBOW FLOW =====
+let hue = 0;
+
+function rainbowFlow(){
+    hue += 1.2; // smooth slow flow
+    return `hsl(${hue}, 100%, 60%)`;
+}
 
 // ===== AUDIO =====
 let ctx, analyser, source, data;
 let running=false;
 
-// ===== PULSE ZOOM SYSTEM =====
-let pulseZoom = 1;
-let pulseTimer = 0;
+// ===== MODE =====
+let mode="idle";
+let modeTimer=0;
 
 // ===== CAMERA =====
+let pulseZoom=1;
 let camX=0, camY=0;
 let velX=0, velY=0;
 
 // ===== ENERGY =====
+let bass=0;
+let energy=0;
 let smoothedBass=0;
 let smoothedEnergy=0;
 let lastEnergy=0;
@@ -135,7 +171,7 @@ btn.onclick=()=>{
     btn.style.display="none";
 };
 
-// ===== SETUP =====
+// ===== AUDIO SETUP =====
 function setupAudio(){
 
     if(running) return;
@@ -155,21 +191,19 @@ function setupAudio(){
     loop();
 }
 
-// ===== DRAW WAVE =====
+// ===== WAVE =====
 function draw(){
 
     analyser.getByteFrequencyData(data);
 
     c.clearRect(0,0,canvas.width,canvas.height);
 
-    let barWidth=canvas.width/data.length;
+    let w=canvas.width/data.length;
 
     for(let i=0;i<data.length;i++){
-        let v=data[i];
-        let h=v*0.5;
-
+        let h=data[i]*0.5;
         c.fillStyle="#00d9ff";
-        c.fillRect(i*barWidth, canvas.height-h, barWidth-1, h);
+        c.fillRect(i*w,canvas.height-h,w-1,h);
     }
 }
 
@@ -178,44 +212,37 @@ function loop(){
 
     analyser.getByteFrequencyData(data);
 
-    // ===== BASS =====
-    let bass=0;
-    for(let i=0;i<4;i++){
-        bass+=data[i];
-    }
-    bass=bass/4;
+    let b=0;
+    for(let i=0;i<4;i++) b+=data[i];
+    bass=b/4;
 
-    // ===== ENERGY =====
-    let energy=0;
-    for(let i=0;i<10;i++){
-        energy+=data[i];
-    }
-    energy=energy/10;
+    let e=0;
+    for(let i=0;i<10;i++) e+=data[i];
+    energy=e/10;
 
-    // ===== SMOOTH =====
     smoothedBass += (bass-smoothedBass)*0.12;
     smoothedEnergy += (energy-smoothedEnergy)*0.1;
 
-    let diff=smoothedEnergy-lastEnergy;
+    let diff = smoothedEnergy - lastEnergy;
 
-    // ===== BEAT DETECTION =====
-    let kick = smoothedBass > 125 && diff > 10;
+    // ===== DROP DETECT =====
+    let kick = smoothedBass > 110 && diff > 6;
 
-    // ===== PULSE ZOOM (ONLY ON BEAT) =====
-    if(pulseTimer>0){
-        pulseTimer--;
-    }else{
-        pulseZoom += (1 - pulseZoom) * 0.25; // balik diam cepat
+    if(kick && mode==="idle"){
+        mode="drop";
+        modeTimer=40;
     }
 
-    if(kick){
+    if(modeTimer>0){
+        modeTimer--;
+    }else{
+        mode="idle";
+    }
 
-        pulseTimer = 10;   // durasi zoom singkat
-        pulseZoom = 1.35;   // zoom brutal
-
-        // kecil banget shake (opsional, masih aman)
-        velX += (Math.random()-0.5)*0.4;
-        velY += (Math.random()-0.5)*0.4;
+    // ===== SHAKE =====
+    if(mode==="drop"){
+        velX += (Math.random()-0.5)*0.8;
+        velY += (Math.random()-0.5)*0.8;
     }
 
     camX += velX;
@@ -227,14 +254,23 @@ function loop(){
     camX *= 0.95;
     camY *= 0.95;
 
-    // ===== APPLY ONLY IMAGE TRANSFORM =====
+    // ===== ZOOM =====
+    let targetZoom = (mode==="drop") ? 1.35 : 1;
+    pulseZoom += (targetZoom - pulseZoom) * 0.18;
+
     screen.style.transform =
     `translate(${camX}px,${camY}px) scale(${pulseZoom})`;
+
+    // ===== TEXT COLOR MODE =====
+    if(mode === "idle"){
+        typing.style.color = rainbowFlow(); // 🌈 smooth flow
+    }else{
+        typing.style.color = "#00aaff"; // 💥 drop clean
+    }
 
     lastEnergy=smoothedEnergy;
 
     draw();
-
     requestAnimationFrame(loop);
 }
 
