@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DJ Club Final Mode</title>
+<title>Full Restore MV</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -12,24 +12,31 @@ body{
     height:100vh;
     background:black;
     overflow:hidden;
-    font-family:monospace;
 }
 
-#screen{
-    width:100%;
-    height:100%;
-    transform:translateZ(0);
-    will-change: transform, filter;
-}
-
-img{
+/* CENTER IMAGE */
+#img{
     position:absolute;
-    width:100%;
-    height:100%;
+    width:60%;
+    height:60%;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
     object-fit:contain;
-    background:black;
+    z-index:2;
 }
 
+/* MILKDROP FRAME */
+canvas{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:1;
+}
+
+/* TEXT */
 #typing{
     position:absolute;
     top:20px;
@@ -37,53 +44,36 @@ img{
     text-align:center;
     font-size:14px;
     z-index:10;
-}
-
-canvas{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:140px;
-    opacity:0.75;
-}
-
-#btn{
-    position:absolute;
-    bottom:40px;
-    left:50%;
-    transform:translateX(-50%);
-    padding:12px;
-    background:#c2185b;
-    color:white;
-    border:none;
-    width:80%;
+    font-family:monospace;
 }
 </style>
 </head>
 
 <body>
 
-<div id="screen">
-    <div id="typing"></div>
-    <img id="bg">
-    <canvas id="wave"></canvas>
-    <button id="btn">▶️ PLAY</button>
-</div>
-
-<audio id="music" loop></audio>
+<div id="typing"></div>
+<img id="img">
+<canvas id="c"></canvas>
+<audio id="music"></audio>
 
 <script>
 
-// ===== ELEMENT =====
-let bg=document.getElementById("bg");
+// ================= ELEMENT =================
+let img=document.getElementById("img");
 let audio=document.getElementById("music");
-let btn=document.getElementById("btn");
-let screen=document.getElementById("screen");
 let typing=document.getElementById("typing");
-let canvas=document.getElementById("wave");
-let c=canvas.getContext("2d");
+let canvas=document.getElementById("c");
+let ctx=canvas.getContext("2d");
 
-// ===== MEDIA =====
+// ================= RESIZE =================
+function resize(){
+    canvas.width=innerWidth;
+    canvas.height=innerHeight;
+}
+resize();
+window.addEventListener("resize",resize);
+
+// ================= ASSETS =================
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png",
@@ -95,21 +85,21 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ===== LOAD RANDOM =====
+// ================= RANDOM LOAD =================
 function loadRandom(){
-    bg.src=images[Math.floor(Math.random()*images.length)];
-    audio.src=songs[Math.floor(Math.random()*songs.length)];
+    img.src = images[Math.floor(Math.random()*images.length)];
+    audio.src = songs[Math.floor(Math.random()*songs.length)];
 }
 loadRandom();
 
-audio.addEventListener("ended",()=>{
-    loadRandom();
-    audio.play();
-});
+// ================= AUDIO ENGINE =================
+let ctxA, analyser, source, data;
+let running=false;
 
-// ===== TEXT =====
+// ================= TEXT =================
 let text="TY FOR THROWING MBG 💀";
 let i=0;
+let glitch=false;
 
 function type(){
     if(i < text.length){
@@ -119,150 +109,92 @@ function type(){
 }
 type();
 
-// ===== AUDIO =====
-let ctx, analyser, source, data;
-let running=false;
+// ================= RAINBOW =================
+let hue=0;
+function rainbow(){
+    hue+=1.2;
+    return `hsl(${hue},100%,60%)`;
+}
 
-// ===== CAMERA =====
-let camX=0, camY=0;
-
-// ===== ENERGY =====
-let bass=0;
-let energy=0;
-let smoothedBass=0;
-let smoothedEnergy=0;
-let lastEnergy=0;
-
-// ===== EFFECT =====
-let freeze=false;
-let resetStrength=0;
-
-// ===== PLAY =====
-btn.onclick=()=>{
+// ================= AUTO NEXT =================
+audio.addEventListener("ended",()=>{
+    loadRandom();
     audio.play();
+});
 
-    if(!ctx){
-        setupAudio();
-    }else if(ctx.state==="suspended"){
-        ctx.resume();
-    }
+audio.addEventListener("play",()=>{
+    if(!ctxA) setupAudio();
+});
 
-    btn.style.display="none";
-};
-
-// ===== AUDIO SETUP =====
+// ================= AUDIO SETUP =================
 function setupAudio(){
 
-    if(running) return;
-    running=true;
+    ctxA=new (window.AudioContext||window.webkitAudioContext)();
 
-    ctx=new (window.AudioContext||window.webkitAudioContext)();
-
-    analyser=ctx.createAnalyser();
-    source=ctx.createMediaElementSource(audio);
+    analyser=ctxA.createAnalyser();
+    source=ctxA.createMediaElementSource(audio);
 
     source.connect(analyser);
-    analyser.connect(ctx.destination);
+    analyser.connect(ctxA.destination);
 
     analyser.fftSize=256;
     data=new Uint8Array(analyser.frequencyBinCount);
 
-    resize();
-    window.addEventListener("resize",resize);
-
     loop();
 }
 
-// ===== RESIZE =====
-function resize(){
-    canvas.width=innerWidth;
-    canvas.height=140;
-}
-
-// ===== VISUALIZER =====
-function draw(){
-
-    analyser.getByteFrequencyData(data);
-
-    c.clearRect(0,0,canvas.width,canvas.height);
-
-    let w=canvas.width/data.length;
-
-    for(let i=0;i<data.length;i++){
-        let h=data[i]*0.55;
-        c.fillStyle="#00d9ff";
-        c.fillRect(i*w,canvas.height-h,w-1,h);
-    }
-}
-
-// ===== LOOP =====
+// ================= LOOP =================
 function loop(){
 
     analyser.getByteFrequencyData(data);
 
-    let b=0;
-    for(let i=0;i<5;i++) b+=data[i];
-    bass=b/5;
+    // bass detect
+    let bass=0;
+    for(let i=0;i<6;i++) bass+=data[i];
+    bass/=6;
 
-    let e=0;
-    for(let i=0;i<10;i++) e+=data[i];
-    energy=e/10;
+    let drop = bass > 135;
 
-    smoothedBass += (bass-smoothedBass)*0.15;
-    smoothedEnergy += (energy-smoothedEnergy)*0.1;
+    // ================= GLITCH TEXT =================
+    if(drop && !glitch){
+        glitch=true;
 
-    let diff = smoothedEnergy - lastEnergy;
+        typing.style.color="#00aaff";
 
-    // ===== DETECT =====
-    let kick = smoothedBass > 90 && diff > 5;
-    let hardDrop = smoothedBass > 130 && diff > 10;
-
-    // ===== DROP MODE =====
-    if(hardDrop && !freeze){
-        freeze = true;
-
-        screen.style.filter = "brightness(1.6)";
-        setTimeout(()=>screen.style.filter="none",90);
+        let original=text;
+        let fx=setInterval(()=>{
+            typing.innerHTML = original
+                .split("")
+                .map(c=>Math.random()>0.7?"█":c)
+                .join("");
+        },60);
 
         setTimeout(()=>{
-            freeze = false;
-            resetStrength = 1;
-        },200);
+            clearInterval(fx);
+            typing.innerHTML=original;
+            glitch=false;
+        },400);
+
+    }else if(!glitch){
+        typing.style.color=rainbow();
     }
 
-    // ===== SHAKE =====
-    if(!freeze && kick){
-        camX += (Math.random()-0.5)*6;
-        camY += (Math.random()-0.5)*6;
+    // ================= MILKDROP FRAME =================
+    ctx.fillStyle="rgba(0,0,0,0.25)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
-        resetStrength = 0.7;
+    for(let i=0;i<70;i++){
+
+        let a=i/70*Math.PI*2;
+        let r=200+bass*2;
+
+        let x=canvas.width/2 + Math.cos(a)*r;
+        let y=canvas.height/2 + Math.sin(a)*r;
+
+        ctx.fillStyle=rainbow();
+        ctx.fillRect(x,y,2,2);
     }
 
-    // ===== SMOOTH RESET =====
-    camX *= 0.93;
-    camY *= 0.93;
-
-    if(resetStrength > 0){
-        camX *= (1 - resetStrength*0.08);
-        camY *= (1 - resetStrength*0.08);
-        resetStrength *= 0.92;
-    }
-
-    // ===== APPLY CAMERA =====
-    screen.style.transform = `
-    translate(${camX}px,${camY}px)
-    `;
-
-    // ===== TEXT COLOR SYSTEM =====
-    if(freeze){
-        typing.style.color = "#00aaff";
-    }else{
-        typing.style.color = `hsl(${Date.now()*0.05 % 360},100%,60%)`;
-    }
-
-    lastEnergy=smoothedEnergy;
-
-    draw();
     requestAnimationFrame(loop);
 }
 
