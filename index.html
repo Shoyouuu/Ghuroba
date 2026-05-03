@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kick Drop Visualizer</title>
+<title>DJ Kick Drop + UI</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -15,7 +15,7 @@ body{
     font-family:monospace;
 }
 
-/* IMAGE NORMAL */
+/* IMAGE */
 #bg{
     position:absolute;
     width:100%;
@@ -24,27 +24,7 @@ body{
     background:black;
 }
 
-/* TEXT */
-#typing{
-    position:absolute;
-    top:20px;
-    width:100%;
-    text-align:center;
-    font-size:14px;
-    color:white;
-    z-index:10;
-}
-
-/* CANVAS */
-canvas{
-    position:absolute;
-    bottom:0;
-    width:100%;
-    height:140px;
-    transition:0.1s;
-}
-
-/* GLOW */
+/* GLITCH GLOW */
 #glow{
     position:absolute;
     width:100%;
@@ -54,6 +34,40 @@ canvas{
     pointer-events:none;
     transition:0.1s;
 }
+
+/* TYPING */
+#typing{
+    position:absolute;
+    top:20px;
+    width:100%;
+    text-align:center;
+    font-size:14px;
+    color:white;
+    z-index:10;
+    transition:0.05s;
+}
+
+/* BUTTON */
+#btn{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:12px;
+    background:#c2185b;
+    color:white;
+    border:none;
+    width:80%;
+    z-index:10;
+}
+
+/* CANVAS */
+canvas{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:140px;
+}
 </style>
 </head>
 
@@ -61,9 +75,11 @@ canvas{
 
 <img id="bg">
 <div id="glow"></div>
-<div id="typing"></div>
-<canvas id="wave"></canvas>
 
+<div id="typing"></div>
+<button id="btn">▶ PLAY</button>
+
+<canvas id="wave"></canvas>
 <audio id="music" loop></audio>
 
 <script>
@@ -72,6 +88,7 @@ canvas{
 let bg=document.getElementById("bg");
 let music=document.getElementById("music");
 let typing=document.getElementById("typing");
+let btn=document.getElementById("btn");
 let canvas=document.getElementById("wave");
 let glow=document.getElementById("glow");
 let c=canvas.getContext("2d");
@@ -88,7 +105,7 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ================= LOAD RANDOM =================
+// ================= RANDOM =================
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
     music.src=songs[Math.floor(Math.random()*songs.length)];
@@ -100,7 +117,7 @@ music.addEventListener("ended",()=>{
     music.play();
 });
 
-// ================= TEXT =================
+// ================= TYPEWRITER =================
 let text="TY FOR THROWING MBG 💀";
 let i=0;
 
@@ -112,24 +129,43 @@ function type(){
 }
 type();
 
+// 🌈 RAINBOW + FLICKER
+function rainbow(){
+    return `hsl(${Date.now()*0.05 % 360},100%,60%)`;
+}
+
+setInterval(()=>{
+    typing.style.color = rainbow();
+
+    // ⚡ flicker ringan
+    let r = Math.random();
+    if(r > 0.94){
+        typing.style.opacity = "0.2";
+        typing.style.letterSpacing = "4px";
+    }else if(r > 0.88){
+        typing.style.opacity = "0.5";
+        typing.style.letterSpacing = "2px";
+    }else{
+        typing.style.opacity = "0.85";
+        typing.style.letterSpacing = "2px";
+    }
+},60);
+
 // ================= AUDIO =================
 let ctx, analyser, source, data;
-let running=false;
-
-// ================= MODE =================
 let mode="normal";
 let modeTimer=0;
 
-// ================= KICK SYSTEM =================
 let smoothedBass=0;
 let lastBass=0;
 let kickCooldown=0;
 
-// ================= START =================
-document.body.addEventListener("click",()=>{
+// ================= BUTTON PLAY =================
+btn.onclick=()=>{
     music.play();
     if(!ctx) setupAudio();
-},{once:true});
+    btn.style.display="none";
+};
 
 // ================= AUDIO SETUP =================
 function setupAudio(){
@@ -174,57 +210,52 @@ function draw(){
 
     let w = canvas.width / data.length;
 
-    // ================= KICK RANGE =================
+    // ================= BASS =================
     let bass=0;
     for(let i=0;i<6;i++) bass += data[i];
     bass /= 6;
 
-    // ================= SMOOTH =================
     smoothedBass += (bass - smoothedBass) * 0.25;
 
     let delta = smoothedBass - lastBass;
 
-    // ================= KICK DETECTION =================
+    // ================= KICK DETECT =================
     let kick =
         delta > 10 &&
         smoothedBass > 85 &&
         kickCooldown <= 0;
 
     if(kick){
-        mode = "drop";
-        modeTimer = 8;     // 🔥 short punch drop
-        kickCooldown = 8;
+        mode="drop";
+        modeTimer=8;
+        kickCooldown=8;
     }
 
-    if(modeTimer > 0){
+    if(modeTimer>0){
         modeTimer--;
     }else{
-        mode = "normal";
+        mode="normal";
     }
 
-    if(kickCooldown > 0) kickCooldown--;
+    if(kickCooldown>0) kickCooldown--;
 
-    lastBass = smoothedBass;
+    lastBass=smoothedBass;
 
     // ================= EFFECT =================
-    let drop = mode === "drop";
+    let drop = mode==="drop";
 
-    let barMul = drop ? 2.5 : 0.9;
-    let glowVal = drop ? 0.5 : 0.15;
-
-    setGlow(glowVal);
-
+    setGlow(drop ? 0.5 : 0.15);
     canvas.style.filter = drop ? "brightness(1.5)" : "brightness(1)";
 
-    // ================= RAINBOW BAR =================
+    let barMul = drop ? 2.5 : 0.9;
+
+    // ================= RAINBOW BARS =================
     for(let i=0;i<data.length;i++){
 
         let h = data[i] * barMul;
-
         let hue = (i / data.length) * 360;
 
         c.fillStyle = `hsl(${hue},100%,60%)`;
-
         c.fillRect(i*w, canvas.height - h, w-1, h);
     }
 }
