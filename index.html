@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spotify Canvas Pro</title>
+<title>Spotify Canvas Pro + Spectrum</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -15,19 +15,19 @@ body{
     font-family:monospace;
 }
 
-/* BACKGROUND IMAGE */
+/* IMAGE NORMAL */
 #bg{
     position:absolute;
-    width:120%;
-    height:120%;
-    top:-10%;
-    left:-10%;
-    object-fit:cover;
-    filter:brightness(0.7) contrast(1.1);
-    transform:scale(1.05);
+    width:60%;
+    height:60%;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    object-fit:contain;
+    background:black;
 }
 
-/* DARK OVERLAY */
+/* OVERLAY */
 #overlay{
     position:absolute;
     width:100%;
@@ -35,38 +35,52 @@ body{
     background:radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.7) 70%, black 100%);
 }
 
-/* TEXT */
+/* TYPING */
 #typing{
     position:absolute;
     top:25px;
     width:100%;
     text-align:center;
-    color:white;
     font-size:14px;
     letter-spacing:2px;
-    opacity:0.8;
-}
-
-/* CENTER GLOW */
-#glow{
-    position:absolute;
-    width:100%;
-    height:100%;
-    background:radial-gradient(circle, rgba(0,200,255,0.08), transparent 60%);
-    mix-blend-mode:screen;
-}
-
-/* BUTTON */
-#btn{
-    position:absolute;
-    bottom:40px;
-    left:50%;
-    transform:translateX(-50%);
-    padding:12px;
-    background:#111;
     color:white;
-    border:1px solid #333;
-    width:80%;
+    opacity:0.85;
+    z-index:10;
+}
+
+/* UI */
+#ui{
+    position:absolute;
+    bottom:80px;
+    left:20px;
+    color:white;
+    z-index:10;
+    padding:10px 14px;
+    border-radius:12px;
+
+    background:rgba(0,0,0,0.35);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+
+    border:1px solid rgba(255,255,255,0.08);
+    opacity:0;
+    animation:fadeIn 1s forwards;
+}
+
+#title{font-size:14px;font-weight:bold;}
+#artist{font-size:12px;opacity:0.7;margin-top:3px;}
+
+@keyframes fadeIn{
+    to{opacity:1;}
+}
+
+/* FREQUENCY BAR */
+#wave{
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:120px;
+    opacity:0.8;
 }
 </style>
 </head>
@@ -74,12 +88,16 @@ body{
 <body>
 
 <img id="bg">
-<div id="glow"></div>
 <div id="overlay"></div>
 
 <div id="typing"></div>
-<button id="btn">▶ PLAY</button>
 
+<div id="ui">
+    <div id="title">Loading...</div>
+    <div id="artist">Unknown</div>
+</div>
+
+<canvas id="wave"></canvas>
 <audio id="music" loop></audio>
 
 <script>
@@ -87,9 +105,12 @@ body{
 // ================= ELEMENT =================
 let bg=document.getElementById("bg");
 let music=document.getElementById("music");
-let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
-let glow=document.getElementById("glow");
+let title=document.getElementById("title");
+let artist=document.getElementById("artist");
+
+let canvas=document.getElementById("wave");
+let c=canvas.getContext("2d");
 
 // ================= ASSETS =================
 const images=[
@@ -103,10 +124,23 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
+const meta=[
+{title:"Midnight Drift",artist:"Shoyou"},
+{title:"Neon Memory",artist:"Unknown Beats"},
+{title:"Slow Motion Love",artist:"Nightcore Lab"},
+{title:"Empty City",artist:"Ambient Core"},
+{title:"Lost Frequency",artist:"DJ Ghost"}
+];
+
 // ================= RANDOM =================
 function loadRandom(){
+
     bg.src = images[Math.floor(Math.random()*images.length)];
     music.src = songs[Math.floor(Math.random()*songs.length)];
+
+    let m = meta[Math.floor(Math.random()*meta.length)];
+    title.innerText = m.title;
+    artist.innerText = m.artist;
 }
 loadRandom();
 
@@ -117,29 +151,31 @@ music.addEventListener("ended",()=>{
 });
 
 // ================= TEXT =================
-let text="TY FOR THROWING MBG";
+let text="TY FOR THROWING MBG 💀";
 let i=0;
 
 function type(){
-    if(i<text.length){
+    if(i < text.length){
         typing.innerHTML += text[i++];
-        setTimeout(type,80);
+        setTimeout(type,60);
     }
 }
 type();
+
+// ================= RAINBOW =================
+function rainbow(){
+    return `hsl(${Date.now()*0.05 % 360},100%,60%)`;
+}
 
 // ================= AUDIO =================
 let ctx, analyser, source, data;
 let running=false;
 
-// ================= PLAY =================
-btn.onclick=()=>{
-    music.play();
-    if(!ctx) setupAudio();
-    btn.style.display="none";
-};
+// ================= PLAY INIT =================
+music.addEventListener("play",()=>{
+    typing.style.color = rainbow();
+});
 
-// ================= AUDIO ENGINE =================
 function setupAudio(){
 
     ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -156,39 +192,54 @@ function setupAudio(){
     loop();
 }
 
-// ================= CINEMATIC LOOP =================
-let t=0;
-let zoom=1;
+// ================= RESIZE =================
+function resize(){
+    canvas.width=innerWidth;
+    canvas.height=120;
+}
+resize();
+window.addEventListener("resize",resize);
 
-function loop(){
+// ================= DRAW FREQUENCY =================
+function draw(){
 
     analyser.getByteFrequencyData(data);
 
-    // ================= BASS =================
-    let bass=0;
-    for(let i=0;i<6;i++) bass+=data[i];
-    bass/=6;
+    c.clearRect(0,0,canvas.width,canvas.height);
 
-    // ================= SMOOTH BREATH =================
-    t += 0.003;
+    let w = canvas.width / data.length;
 
-    let breathe = Math.sin(t) * 0.02;
-    let bassPulse = bass / 255 * 0.05;
+    for(let i=0;i<data.length;i++){
 
-    let targetZoom = 1 + breathe + bassPulse;
+        let h = data[i] * 0.5;
 
-    zoom += (targetZoom - zoom) * 0.05;
+        let color;
 
-    bg.style.transform = `scale(${zoom})`;
+        if(i < 8){
+            color="#00ff5a"; // 🟢 LOW
+        }else if(i < 40){
+            color="#ffd000"; // 🟡 MID
+        }else{
+            color="#ff2b2b"; // 🔴 HIGH
+        }
 
-    // ================= GLOW =================
-    glow.style.opacity = 0.2 + bass/600;
+        c.fillStyle=color;
+        c.fillRect(i*w, canvas.height-h, w-1, h);
+    }
+}
 
-    // ================= TEXT COLOR (soft cinematic) =================
-    typing.style.opacity = 0.7 + bass/500;
+// ================= LOOP =================
+function loop(){
 
+    draw();
     requestAnimationFrame(loop);
 }
+
+// ================= START =================
+document.body.addEventListener("click",()=>{
+    music.play();
+    if(!ctx) setupAudio();
+},{once:true});
 
 </script>
 
