@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cinematic MV Engine</title>
+<title>DJ Club Pro Mode</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -19,7 +19,7 @@ body{
     width:100%;
     height:100%;
     transform:translateZ(0);
-    will-change: transform;
+    will-change: transform, filter;
 }
 
 img{
@@ -44,7 +44,7 @@ canvas{
     bottom:0;
     width:100%;
     height:140px;
-    opacity:0.6;
+    opacity:0.7;
 }
 
 #btn{
@@ -64,7 +64,7 @@ canvas{
 <body>
 
 <div id="screen">
-    <div id="typing"></div>
+    <div id="typing">DJ CLUB PRO MODE</div>
     <img id="bg">
     <canvas id="wave"></canvas>
     <button id="btn">▶️ PLAY</button>
@@ -78,7 +78,6 @@ canvas{
 let bg=document.getElementById("bg");
 let audio=document.getElementById("music");
 let btn=document.getElementById("btn");
-let typing=document.getElementById("typing");
 let screen=document.getElementById("screen");
 
 // ===== MEDIA =====
@@ -105,29 +104,12 @@ audio.addEventListener("ended",()=>{
     audio.play();
 });
 
-// ===== TYPING =====
-let text="CINEMATIC MV MODE";
-let i=0;
-
-function type(){
-    if(i<text.length){
-        typing.innerHTML += text[i++];
-        setTimeout(type,60);
-    }
-}
-type();
-
 // ===== AUDIO =====
 let ctx, analyser, source, data;
 let running=false;
 
-// ===== MODE =====
-let mode="idle";
-let modeTimer=0;
-
 // ===== CAMERA =====
 let camX=0, camY=0;
-let velX=0, velY=0;
 
 // ===== ENERGY =====
 let bass=0;
@@ -136,16 +118,9 @@ let smoothedBass=0;
 let smoothedEnergy=0;
 let lastEnergy=0;
 
-// ===== CANVAS =====
-let canvas=document.getElementById("wave");
-let c=canvas.getContext("2d");
-
-function resize(){
-    canvas.width=innerWidth;
-    canvas.height=140;
-}
-resize();
-addEventListener("resize",resize);
+// ===== EFFECT CONTROL =====
+let freeze=false;
+let resetStrength=0;
 
 // ===== PLAY =====
 btn.onclick=()=>{
@@ -180,22 +155,6 @@ function setupAudio(){
     loop();
 }
 
-// ===== WAVE =====
-function draw(){
-
-    analyser.getByteFrequencyData(data);
-
-    c.clearRect(0,0,canvas.width,canvas.height);
-
-    let w=canvas.width/data.length;
-
-    for(let i=0;i<data.length;i++){
-        let h=data[i]*0.5;
-        c.fillStyle="#00d9ff";
-        c.fillRect(i*w,canvas.height-h,w-1,h);
-    }
-}
-
 // ===== LOOP =====
 function loop(){
 
@@ -209,59 +168,56 @@ function loop(){
     for(let i=0;i<10;i++) e+=data[i];
     energy=e/10;
 
-    smoothedBass += (bass-smoothedBass)*0.12;
+    smoothedBass += (bass-smoothedBass)*0.15;
     smoothedEnergy += (energy-smoothedEnergy)*0.1;
 
     let diff = smoothedEnergy - lastEnergy;
 
     // ===== BEAT DETECT =====
-    let kick = smoothedBass > 95 && diff > 4;
+    let kick = smoothedBass > 90 && diff > 5;
+    let hardDrop = smoothedBass > 130 && diff > 10;
 
-    if(kick){
-        mode="drop";
-        modeTimer=50;
+    // ===== HARD DROP SYSTEM =====
+    if(hardDrop && !freeze){
+        freeze = true;
 
-        // 💡 light flash (no zoom)
-        document.body.style.filter="brightness(1.2)";
-        setTimeout(()=>document.body.style.filter="none",60);
+        // 💡 FLASH
+        screen.style.filter = "brightness(1.6)";
+        setTimeout(()=>screen.style.filter="none", 90);
+
+        // ⏸️ FREEZE 0.2s
+        setTimeout(()=>{
+            freeze = false;
+            resetStrength = 1;
+        }, 200);
     }
 
-    if(modeTimer>0){
-        modeTimer--;
-    }else{
-        mode="idle";
+    // ===== SHAKE ON KICK =====
+    if(!freeze && kick){
+        camX += (Math.random()-0.5)*7;
+        camY += (Math.random()-0.5)*7;
+
+        resetStrength = 0.7;
     }
 
-    // ===== CAMERA INERTIA =====
-    let force = (mode==="drop") ? 0.7 : 0.12;
+    // ===== SMOOTH RESET (RECOIL) =====
+    camX *= 0.92;
+    camY *= 0.92;
 
-    velX += (Math.random()-0.5)*force;
-    velY += (Math.random()-0.5)*force;
+    if(resetStrength > 0){
+        camX *= (1 - resetStrength*0.08);
+        camY *= (1 - resetStrength*0.08);
 
-    camX += velX;
-    camY += velY;
+        resetStrength *= 0.92;
+    }
 
-    velX *= 0.85;
-    velY *= 0.85;
-
-    camX *= 0.94;
-    camY *= 0.94;
-
-    // ===== CINEMATIC SKEW =====
-    let skew = Math.sin(Date.now()*0.002) * 1.2;
-
+    // ===== APPLY =====
     screen.style.transform = `
     translate(${camX}px,${camY}px)
-    skewX(${skew}deg)
     `;
-
-    // ===== TEXT COLOR =====
-    typing.style.color =
-        (mode==="idle") ? `hsl(${Date.now()*0.05 % 360},100%,60%)` : "#00aaff";
 
     lastEnergy=smoothedEnergy;
 
-    draw();
     requestAnimationFrame(loop);
 }
 
