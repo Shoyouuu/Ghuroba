@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DJ Rainbow + Flicker Mode</title>
+<title>Kick Drop Visualizer</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -31,10 +31,8 @@ body{
     width:100%;
     text-align:center;
     font-size:14px;
-    z-index:10;
     color:white;
-    opacity:0.85;
-    transition:0.1s;
+    z-index:10;
 }
 
 /* CANVAS */
@@ -43,31 +41,28 @@ canvas{
     bottom:0;
     width:100%;
     height:140px;
+    transition:0.1s;
 }
 
-/* BUTTON */
-#btn{
+/* GLOW */
+#glow{
     position:absolute;
-    bottom:40px;
-    left:50%;
-    transform:translateX(-50%);
-    padding:12px;
-    background:#c2185b;
-    color:white;
-    border:none;
-    width:80%;
+    width:100%;
+    height:100%;
+    background:radial-gradient(circle, rgba(0,200,255,0.15), transparent 60%);
+    mix-blend-mode:screen;
+    pointer-events:none;
+    transition:0.1s;
 }
 </style>
 </head>
 
 <body>
 
-<div id="screen">
-    <div id="typing"></div>
-    <img id="bg">
-    <canvas id="wave"></canvas>
-    <button id="btn">▶️ PLAY</button>
-</div>
+<img id="bg">
+<div id="glow"></div>
+<div id="typing"></div>
+<canvas id="wave"></canvas>
 
 <audio id="music" loop></audio>
 
@@ -75,10 +70,10 @@ canvas{
 
 // ================= ELEMENT =================
 let bg=document.getElementById("bg");
-let audio=document.getElementById("music");
-let btn=document.getElementById("btn");
+let music=document.getElementById("music");
 let typing=document.getElementById("typing");
 let canvas=document.getElementById("wave");
+let glow=document.getElementById("glow");
 let c=canvas.getContext("2d");
 
 // ================= MEDIA =================
@@ -96,13 +91,13 @@ const songs=[
 // ================= LOAD RANDOM =================
 function loadRandom(){
     bg.src=images[Math.floor(Math.random()*images.length)];
-    audio.src=songs[Math.floor(Math.random()*songs.length)];
+    music.src=songs[Math.floor(Math.random()*songs.length)];
 }
 loadRandom();
 
-audio.addEventListener("ended",()=>{
+music.addEventListener("ended",()=>{
     loadRandom();
-    audio.play();
+    music.play();
 });
 
 // ================= TEXT =================
@@ -117,54 +112,32 @@ function type(){
 }
 type();
 
-// ⚡ TEXT FLICKER (GLITCH)
-setInterval(()=>{
-    let r=Math.random();
-
-    if(r > 0.92){
-        typing.style.opacity="0.2";
-        typing.style.letterSpacing="4px";
-    }else if(r > 0.85){
-        typing.style.opacity="0.5";
-        typing.style.letterSpacing="2px";
-    }else{
-        typing.style.opacity="0.85";
-        typing.style.letterSpacing="2px";
-    }
-},80);
-
-// ================= RAINBOW =================
-function rainbow(){
-    return `hsl(${Date.now()*0.05 % 360},100%,60%)`;
-}
-
 // ================= AUDIO =================
 let ctx, analyser, source, data;
 let running=false;
 
-// ================= PLAY =================
-btn.onclick=()=>{
-    audio.play();
+// ================= MODE =================
+let mode="normal";
+let modeTimer=0;
 
-    if(!ctx){
-        setupAudio();
-    }else if(ctx.state==="suspended"){
-        ctx.resume();
-    }
+// ================= KICK SYSTEM =================
+let smoothedBass=0;
+let lastBass=0;
+let kickCooldown=0;
 
-    btn.style.display="none";
-};
+// ================= START =================
+document.body.addEventListener("click",()=>{
+    music.play();
+    if(!ctx) setupAudio();
+},{once:true});
 
 // ================= AUDIO SETUP =================
 function setupAudio(){
 
-    if(running) return;
-    running=true;
-
     ctx=new (window.AudioContext||window.webkitAudioContext)();
 
     analyser=ctx.createAnalyser();
-    source=ctx.createMediaElementSource(audio);
+    source=ctx.createMediaElementSource(music);
 
     source.connect(analyser);
     analyser.connect(ctx.destination);
@@ -184,30 +157,80 @@ function resize(){
     canvas.height=140;
 }
 
-// ================= RAINBOW FREQUENCY =================
+// ================= GLOW =================
+function setGlow(v){
+    glow.style.background =
+        `radial-gradient(circle,
+        rgba(0,200,255,${v}),
+        transparent 60%)`;
+}
+
+// ================= DRAW =================
 function draw(){
 
     analyser.getByteFrequencyData(data);
 
     c.clearRect(0,0,canvas.width,canvas.height);
 
-    let w=canvas.width/data.length;
+    let w = canvas.width / data.length;
 
+    // ================= KICK RANGE =================
+    let bass=0;
+    for(let i=0;i<6;i++) bass += data[i];
+    bass /= 6;
+
+    // ================= SMOOTH =================
+    smoothedBass += (bass - smoothedBass) * 0.25;
+
+    let delta = smoothedBass - lastBass;
+
+    // ================= KICK DETECTION =================
+    let kick =
+        delta > 10 &&
+        smoothedBass > 85 &&
+        kickCooldown <= 0;
+
+    if(kick){
+        mode = "drop";
+        modeTimer = 8;     // 🔥 short punch drop
+        kickCooldown = 8;
+    }
+
+    if(modeTimer > 0){
+        modeTimer--;
+    }else{
+        mode = "normal";
+    }
+
+    if(kickCooldown > 0) kickCooldown--;
+
+    lastBass = smoothedBass;
+
+    // ================= EFFECT =================
+    let drop = mode === "drop";
+
+    let barMul = drop ? 2.5 : 0.9;
+    let glowVal = drop ? 0.5 : 0.15;
+
+    setGlow(glowVal);
+
+    canvas.style.filter = drop ? "brightness(1.5)" : "brightness(1)";
+
+    // ================= RAINBOW BAR =================
     for(let i=0;i<data.length;i++){
 
-        let h=data[i]*0.6;
+        let h = data[i] * barMul;
 
-        let hue=(i/data.length)*360;
+        let hue = (i / data.length) * 360;
 
-        c.fillStyle=`hsl(${hue},100%,60%)`;
+        c.fillStyle = `hsl(${hue},100%,60%)`;
 
-        c.fillRect(i*w,canvas.height-h,w-1,h);
+        c.fillRect(i*w, canvas.height - h, w-1, h);
     }
 }
 
 // ================= LOOP =================
 function loop(){
-
     draw();
     requestAnimationFrame(loop);
 }
