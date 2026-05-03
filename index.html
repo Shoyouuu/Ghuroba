@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Full Restore MV</title>
+<title>Spotify Canvas Pro</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -12,66 +12,84 @@ body{
     height:100vh;
     background:black;
     overflow:hidden;
+    font-family:monospace;
 }
 
-/* CENTER IMAGE */
-#img{
+/* BACKGROUND IMAGE */
+#bg{
     position:absolute;
-    width:60%;
-    height:60%;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    object-fit:contain;
-    z-index:2;
+    width:120%;
+    height:120%;
+    top:-10%;
+    left:-10%;
+    object-fit:cover;
+    filter:brightness(0.7) contrast(1.1);
+    transform:scale(1.05);
 }
 
-/* MILKDROP FRAME */
-canvas{
+/* DARK OVERLAY */
+#overlay{
     position:absolute;
-    top:0;
-    left:0;
     width:100%;
     height:100%;
-    z-index:1;
+    background:radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.7) 70%, black 100%);
 }
 
 /* TEXT */
 #typing{
     position:absolute;
-    top:20px;
+    top:25px;
     width:100%;
     text-align:center;
+    color:white;
     font-size:14px;
-    z-index:10;
-    font-family:monospace;
+    letter-spacing:2px;
+    opacity:0.8;
+}
+
+/* CENTER GLOW */
+#glow{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:radial-gradient(circle, rgba(0,200,255,0.08), transparent 60%);
+    mix-blend-mode:screen;
+}
+
+/* BUTTON */
+#btn{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:12px;
+    background:#111;
+    color:white;
+    border:1px solid #333;
+    width:80%;
 }
 </style>
 </head>
 
 <body>
 
+<img id="bg">
+<div id="glow"></div>
+<div id="overlay"></div>
+
 <div id="typing"></div>
-<img id="img">
-<canvas id="c"></canvas>
-<audio id="music"></audio>
+<button id="btn">▶ PLAY</button>
+
+<audio id="music" loop></audio>
 
 <script>
 
 // ================= ELEMENT =================
-let img=document.getElementById("img");
-let audio=document.getElementById("music");
+let bg=document.getElementById("bg");
+let music=document.getElementById("music");
+let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
-let canvas=document.getElementById("c");
-let ctx=canvas.getContext("2d");
-
-// ================= RESIZE =================
-function resize(){
-    canvas.width=innerWidth;
-    canvas.height=innerHeight;
-}
-resize();
-window.addEventListener("resize",resize);
+let glow=document.getElementById("glow");
 
 // ================= ASSETS =================
 const images=[
@@ -85,57 +103,52 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-// ================= RANDOM LOAD =================
+// ================= RANDOM =================
 function loadRandom(){
-    img.src = images[Math.floor(Math.random()*images.length)];
-    audio.src = songs[Math.floor(Math.random()*songs.length)];
+    bg.src = images[Math.floor(Math.random()*images.length)];
+    music.src = songs[Math.floor(Math.random()*songs.length)];
 }
 loadRandom();
 
-// ================= AUDIO ENGINE =================
-let ctxA, analyser, source, data;
-let running=false;
+// ================= AUTO NEXT =================
+music.addEventListener("ended",()=>{
+    loadRandom();
+    music.play();
+});
 
 // ================= TEXT =================
-let text="TY FOR THROWING MBG 💀";
+let text="TY FOR THROWING MBG";
 let i=0;
-let glitch=false;
 
 function type(){
-    if(i < text.length){
+    if(i<text.length){
         typing.innerHTML += text[i++];
-        setTimeout(type,55);
+        setTimeout(type,80);
     }
 }
 type();
 
-// ================= RAINBOW =================
-let hue=0;
-function rainbow(){
-    hue+=1.2;
-    return `hsl(${hue},100%,60%)`;
-}
+// ================= AUDIO =================
+let ctx, analyser, source, data;
+let running=false;
 
-// ================= AUTO NEXT =================
-audio.addEventListener("ended",()=>{
-    loadRandom();
-    audio.play();
-});
+// ================= PLAY =================
+btn.onclick=()=>{
+    music.play();
+    if(!ctx) setupAudio();
+    btn.style.display="none";
+};
 
-audio.addEventListener("play",()=>{
-    if(!ctxA) setupAudio();
-});
-
-// ================= AUDIO SETUP =================
+// ================= AUDIO ENGINE =================
 function setupAudio(){
 
-    ctxA=new (window.AudioContext||window.webkitAudioContext)();
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
 
-    analyser=ctxA.createAnalyser();
-    source=ctxA.createMediaElementSource(audio);
+    analyser=ctx.createAnalyser();
+    source=ctx.createMediaElementSource(music);
 
     source.connect(analyser);
-    analyser.connect(ctxA.destination);
+    analyser.connect(ctx.destination);
 
     analyser.fftSize=256;
     data=new Uint8Array(analyser.frequencyBinCount);
@@ -143,57 +156,36 @@ function setupAudio(){
     loop();
 }
 
-// ================= LOOP =================
+// ================= CINEMATIC LOOP =================
+let t=0;
+let zoom=1;
+
 function loop(){
 
     analyser.getByteFrequencyData(data);
 
-    // bass detect
+    // ================= BASS =================
     let bass=0;
     for(let i=0;i<6;i++) bass+=data[i];
     bass/=6;
 
-    let drop = bass > 135;
+    // ================= SMOOTH BREATH =================
+    t += 0.003;
 
-    // ================= GLITCH TEXT =================
-    if(drop && !glitch){
-        glitch=true;
+    let breathe = Math.sin(t) * 0.02;
+    let bassPulse = bass / 255 * 0.05;
 
-        typing.style.color="#00aaff";
+    let targetZoom = 1 + breathe + bassPulse;
 
-        let original=text;
-        let fx=setInterval(()=>{
-            typing.innerHTML = original
-                .split("")
-                .map(c=>Math.random()>0.7?"█":c)
-                .join("");
-        },60);
+    zoom += (targetZoom - zoom) * 0.05;
 
-        setTimeout(()=>{
-            clearInterval(fx);
-            typing.innerHTML=original;
-            glitch=false;
-        },400);
+    bg.style.transform = `scale(${zoom})`;
 
-    }else if(!glitch){
-        typing.style.color=rainbow();
-    }
+    // ================= GLOW =================
+    glow.style.opacity = 0.2 + bass/600;
 
-    // ================= MILKDROP FRAME =================
-    ctx.fillStyle="rgba(0,0,0,0.25)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    for(let i=0;i<70;i++){
-
-        let a=i/70*Math.PI*2;
-        let r=200+bass*2;
-
-        let x=canvas.width/2 + Math.cos(a)*r;
-        let y=canvas.height/2 + Math.sin(a)*r;
-
-        ctx.fillStyle=rainbow();
-        ctx.fillRect(x,y,2,2);
-    }
+    // ================= TEXT COLOR (soft cinematic) =================
+    typing.style.opacity = 0.7 + bass/500;
 
     requestAnimationFrame(loop);
 }
