@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spotify Canvas Pro + Spectrum</title>
+<title>DJ Rainbow + Flicker Mode</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -18,101 +18,70 @@ body{
 /* IMAGE NORMAL */
 #bg{
     position:absolute;
-    width:60%;
-    height:60%;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
+    width:100%;
+    height:100%;
     object-fit:contain;
     background:black;
 }
 
-/* OVERLAY */
-#overlay{
-    position:absolute;
-    width:100%;
-    height:100%;
-    background:radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.7) 70%, black 100%);
-}
-
-/* TYPING */
+/* TEXT */
 #typing{
     position:absolute;
-    top:25px;
+    top:20px;
     width:100%;
     text-align:center;
     font-size:14px;
-    letter-spacing:2px;
+    z-index:10;
     color:white;
     opacity:0.85;
-    z-index:10;
+    transition:0.1s;
 }
 
-/* UI */
-#ui{
-    position:absolute;
-    bottom:80px;
-    left:20px;
-    color:white;
-    z-index:10;
-    padding:10px 14px;
-    border-radius:12px;
-
-    background:rgba(0,0,0,0.35);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
-
-    border:1px solid rgba(255,255,255,0.08);
-    opacity:0;
-    animation:fadeIn 1s forwards;
-}
-
-#title{font-size:14px;font-weight:bold;}
-#artist{font-size:12px;opacity:0.7;margin-top:3px;}
-
-@keyframes fadeIn{
-    to{opacity:1;}
-}
-
-/* FREQUENCY BAR */
-#wave{
+/* CANVAS */
+canvas{
     position:absolute;
     bottom:0;
     width:100%;
-    height:120px;
-    opacity:0.8;
+    height:140px;
+}
+
+/* BUTTON */
+#btn{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:12px;
+    background:#c2185b;
+    color:white;
+    border:none;
+    width:80%;
 }
 </style>
 </head>
 
 <body>
 
-<img id="bg">
-<div id="overlay"></div>
-
-<div id="typing"></div>
-
-<div id="ui">
-    <div id="title">Loading...</div>
-    <div id="artist">Unknown</div>
+<div id="screen">
+    <div id="typing"></div>
+    <img id="bg">
+    <canvas id="wave"></canvas>
+    <button id="btn">▶️ PLAY</button>
 </div>
 
-<canvas id="wave"></canvas>
 <audio id="music" loop></audio>
 
 <script>
 
 // ================= ELEMENT =================
 let bg=document.getElementById("bg");
-let music=document.getElementById("music");
+let audio=document.getElementById("music");
+let btn=document.getElementById("btn");
 let typing=document.getElementById("typing");
-let title=document.getElementById("title");
-let artist=document.getElementById("artist");
-
 let canvas=document.getElementById("wave");
 let c=canvas.getContext("2d");
 
-// ================= ASSETS =================
+// ================= MEDIA =================
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.png",
@@ -124,30 +93,16 @@ const songs=[
 "assets/4.mp3","assets/5.mp3"
 ];
 
-const meta=[
-{title:"Midnight Drift",artist:"Shoyou"},
-{title:"Neon Memory",artist:"Unknown Beats"},
-{title:"Slow Motion Love",artist:"Nightcore Lab"},
-{title:"Empty City",artist:"Ambient Core"},
-{title:"Lost Frequency",artist:"DJ Ghost"}
-];
-
-// ================= RANDOM =================
+// ================= LOAD RANDOM =================
 function loadRandom(){
-
-    bg.src = images[Math.floor(Math.random()*images.length)];
-    music.src = songs[Math.floor(Math.random()*songs.length)];
-
-    let m = meta[Math.floor(Math.random()*meta.length)];
-    title.innerText = m.title;
-    artist.innerText = m.artist;
+    bg.src=images[Math.floor(Math.random()*images.length)];
+    audio.src=songs[Math.floor(Math.random()*songs.length)];
 }
 loadRandom();
 
-// ================= AUTO NEXT =================
-music.addEventListener("ended",()=>{
+audio.addEventListener("ended",()=>{
     loadRandom();
-    music.play();
+    audio.play();
 });
 
 // ================= TEXT =================
@@ -157,10 +112,26 @@ let i=0;
 function type(){
     if(i < text.length){
         typing.innerHTML += text[i++];
-        setTimeout(type,60);
+        setTimeout(type,55);
     }
 }
 type();
+
+// ⚡ TEXT FLICKER (GLITCH)
+setInterval(()=>{
+    let r=Math.random();
+
+    if(r > 0.92){
+        typing.style.opacity="0.2";
+        typing.style.letterSpacing="4px";
+    }else if(r > 0.85){
+        typing.style.opacity="0.5";
+        typing.style.letterSpacing="2px";
+    }else{
+        typing.style.opacity="0.85";
+        typing.style.letterSpacing="2px";
+    }
+},80);
 
 // ================= RAINBOW =================
 function rainbow(){
@@ -171,17 +142,29 @@ function rainbow(){
 let ctx, analyser, source, data;
 let running=false;
 
-// ================= PLAY INIT =================
-music.addEventListener("play",()=>{
-    typing.style.color = rainbow();
-});
+// ================= PLAY =================
+btn.onclick=()=>{
+    audio.play();
 
+    if(!ctx){
+        setupAudio();
+    }else if(ctx.state==="suspended"){
+        ctx.resume();
+    }
+
+    btn.style.display="none";
+};
+
+// ================= AUDIO SETUP =================
 function setupAudio(){
+
+    if(running) return;
+    running=true;
 
     ctx=new (window.AudioContext||window.webkitAudioContext)();
 
     analyser=ctx.createAnalyser();
-    source=ctx.createMediaElementSource(music);
+    source=ctx.createMediaElementSource(audio);
 
     source.connect(analyser);
     analyser.connect(ctx.destination);
@@ -189,42 +172,36 @@ function setupAudio(){
     analyser.fftSize=256;
     data=new Uint8Array(analyser.frequencyBinCount);
 
+    resize();
+    window.addEventListener("resize",resize);
+
     loop();
 }
 
 // ================= RESIZE =================
 function resize(){
     canvas.width=innerWidth;
-    canvas.height=120;
+    canvas.height=140;
 }
-resize();
-window.addEventListener("resize",resize);
 
-// ================= DRAW FREQUENCY =================
+// ================= RAINBOW FREQUENCY =================
 function draw(){
 
     analyser.getByteFrequencyData(data);
 
     c.clearRect(0,0,canvas.width,canvas.height);
 
-    let w = canvas.width / data.length;
+    let w=canvas.width/data.length;
 
     for(let i=0;i<data.length;i++){
 
-        let h = data[i] * 0.5;
+        let h=data[i]*0.6;
 
-        let color;
+        let hue=(i/data.length)*360;
 
-        if(i < 8){
-            color="#00ff5a"; // 🟢 LOW
-        }else if(i < 40){
-            color="#ffd000"; // 🟡 MID
-        }else{
-            color="#ff2b2b"; // 🔴 HIGH
-        }
+        c.fillStyle=`hsl(${hue},100%,60%)`;
 
-        c.fillStyle=color;
-        c.fillRect(i*w, canvas.height-h, w-1, h);
+        c.fillRect(i*w,canvas.height-h,w-1,h);
     }
 }
 
@@ -234,12 +211,6 @@ function loop(){
     draw();
     requestAnimationFrame(loop);
 }
-
-// ================= START =================
-document.body.addEventListener("click",()=>{
-    music.play();
-    if(!ctx) setupAudio();
-},{once:true});
 
 </script>
 
