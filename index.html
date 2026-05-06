@@ -15,7 +15,7 @@ body{
     font-family:monospace;
 }
 
-/* IMAGE */
+
 #bg{
     position:absolute;
     width:100%;
@@ -24,7 +24,7 @@ body{
     background:black;
 }
 
-/* GLITCH GLOW */
+
 #glow{
     position:absolute;
     width:100%;
@@ -35,7 +35,7 @@ body{
     transition:0.1s;
 }
 
-/* TYPING */
+
 #typing{
     position:absolute;
     top:20px;
@@ -47,7 +47,7 @@ body{
     transition:0.05s;
 }
 
-/* BUTTON */
+
 #btn{
     position:absolute;
     bottom:40px;
@@ -61,7 +61,7 @@ body{
     z-index:10;
 }
 
-/* CANVAS */
+
 canvas{
     position:absolute;
     bottom:0;
@@ -84,7 +84,7 @@ canvas{
 
 <script>
 
-// ================= ELEMENT =================
+
 let bg=document.getElementById("bg");
 let music=document.getElementById("music");
 let typing=document.getElementById("typing");
@@ -93,7 +93,7 @@ let canvas=document.getElementById("wave");
 let glow=document.getElementById("glow");
 let c=canvas.getContext("2d");
 
-// ================= MEDIA =================
+
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
 "assets/5.jpeg","assets/6.jpeg","assets/7.jpeg","assets/8.jpeg",
@@ -109,7 +109,7 @@ const songs=[
 "assets/4.mp3","assets/5.mp3","assets/6.mp3",
 "assets/7.mp3","assets/8.mp3" ];
 
-// ================= RANDOM MODE =================
+
 let useGif = Math.random() < 0.5;
 
 function loadRandom(){
@@ -119,23 +119,23 @@ function loadRandom(){
     music.src=songs[Math.floor(Math.random()*songs.length)];
 
     if(useGif){
-        // 🎞️ GIF
+        
         bg.src=gifs[Math.floor(Math.random()*gifs.length)];
     }else{
-        // 🖼️ IMAGE
+        
         bg.src=images[Math.floor(Math.random()*images.length)];
     }
 }
 
 loadRandom();
 
-// ================= MUSIC =================
+
 music.addEventListener("ended",()=>{
     loadRandom();
     music.play();
 });
 
-// ================= TYPEWRITER =================
+
 let text="TY FOR THROWING MBG💩";
 let i=0;
 
@@ -147,7 +147,7 @@ function type(){
 }
 type();
 
-// 🌈 RAINBOW + FLICKER
+
 function rainbow(){
     return `hsl(${Date.now()*0.05 % 360},100%,60%)`;
 }
@@ -168,7 +168,7 @@ setInterval(()=>{
     }
 },60);
 
-// ================= AUDIO =================
+
 let ctx, analyser, source, data;
 let mode="normal";
 let modeTimer=0;
@@ -177,14 +177,14 @@ let smoothedBass=0;
 let lastBass=0;
 let kickCooldown=0;
 
-// ================= BUTTON =================
+
 btn.onclick=()=>{
     music.play();
     if(!ctx) setupAudio();
     btn.style.display="none";
 };
 
-// ================= AUDIO SETUP =================
+
 function setupAudio(){
 
     ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -204,13 +204,13 @@ function setupAudio(){
     loop();
 }
 
-// ================= RESIZE =================
+
 function resize(){
     canvas.width=innerWidth;
     canvas.height=140;
 }
 
-// ================= GLOW =================
+
 function setGlow(v){
     glow.style.background =
         `radial-gradient(circle,
@@ -218,7 +218,7 @@ function setGlow(v){
         transparent 60%)`;
 }
 
-// ================= DRAW =================
+
 function draw(){
 
     if(!analyser) return;
@@ -273,7 +273,7 @@ function draw(){
     }
 }
 
-// ================= LOOP =================
+
 function loop(){
     draw();
     requestAnimationFrame(loop);
