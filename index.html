@@ -96,22 +96,40 @@ let c=canvas.getContext("2d");
 // ================= MEDIA =================
 const images=[
 "assets/1.png","assets/2.png","assets/3.png","assets/4.png",
-"assets/5.jpg","assets/6.jpeg","assets/7.jpeg","assets/8.jpeg",
-"assets/9.png","assets/10.jpeg","assets/11.jpeg","assets/12.jpeg"
+"assets/5.jpeg","assets/6.jpeg","assets/7.jpeg","assets/8.jpeg",
+"assets/9.png","assets/10.jpeg","assets/11.jpeg","assets/12.jpeg","assets/13.jpeg"
+];
+
+const gifs=[
+"assets/1.gif","assets/2.gif","assets/3.gif"
 ];
 
 const songs=[
 "assets/1.mp3","assets/2.mp3","assets/3.mp3",
-"assets/4.mp3","assets/5.mp3"
-];
+"assets/4.mp3","assets/5.mp3","assets/6.mp3",
+"assets/7.mp3","assets/8.mp3" ];
 
-// ================= RANDOM =================
+// ================= RANDOM MODE =================
+let useGif = Math.random() < 0.5;
+
 function loadRandom(){
-    bg.src=images[Math.floor(Math.random()*images.length)];
+
+    bg.style.display="block";
+
     music.src=songs[Math.floor(Math.random()*songs.length)];
+
+    if(useGif){
+        // 🎞️ GIF
+        bg.src=gifs[Math.floor(Math.random()*gifs.length)];
+    }else{
+        // 🖼️ IMAGE
+        bg.src=images[Math.floor(Math.random()*images.length)];
+    }
 }
+
 loadRandom();
 
+// ================= MUSIC =================
 music.addEventListener("ended",()=>{
     loadRandom();
     music.play();
@@ -137,7 +155,6 @@ function rainbow(){
 setInterval(()=>{
     typing.style.color = rainbow();
 
-    // ⚡ flicker ringan
     let r = Math.random();
     if(r > 0.94){
         typing.style.opacity = "0.2";
@@ -160,7 +177,7 @@ let smoothedBass=0;
 let lastBass=0;
 let kickCooldown=0;
 
-// ================= BUTTON PLAY =================
+// ================= BUTTON =================
 btn.onclick=()=>{
     music.play();
     if(!ctx) setupAudio();
@@ -204,13 +221,14 @@ function setGlow(v){
 // ================= DRAW =================
 function draw(){
 
+    if(!analyser) return;
+
     analyser.getByteFrequencyData(data);
 
     c.clearRect(0,0,canvas.width,canvas.height);
 
     let w = canvas.width / data.length;
 
-    // ================= BASS =================
     let bass=0;
     for(let i=0;i<6;i++) bass += data[i];
     bass /= 6;
@@ -219,7 +237,6 @@ function draw(){
 
     let delta = smoothedBass - lastBass;
 
-    // ================= KICK DETECT =================
     let kick =
         delta > 10 &&
         smoothedBass > 85 &&
@@ -241,18 +258,14 @@ function draw(){
 
     lastBass=smoothedBass;
 
-    // ================= EFFECT =================
     let drop = mode==="drop";
 
     setGlow(drop ? 0.5 : 0.15);
     canvas.style.filter = drop ? "brightness(1.5)" : "brightness(1)";
 
-    let barMul = drop ? 2.5 : 0.9;
-
-    // ================= RAINBOW BARS =================
     for(let i=0;i<data.length;i++){
 
-        let h = data[i] * barMul;
+        let h = data[i];
         let hue = (i / data.length) * 360;
 
         c.fillStyle = `hsl(${hue},100%,60%)`;
