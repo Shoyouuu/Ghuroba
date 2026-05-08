@@ -1,20 +1,24 @@
 # Ghuroba+Konoha
-pkg update -y && pkg install -y git && git clone --depth=1 https://github.com/Shoyouuu/Ghuroba.git && cd Ghuroba && chmod +x ghurob ghurob2 && cp ghurob ghurob2 $PREFIX/bin/
+pkg update -y && pkg install -y git && git clone --depth=1 https://github.com/Shoyouuu/Ghuroba.git && cd Ghuroba && chmod +x ghurob konoha && cp ghurob konoha $PREFIX/bin/
 
 
 
 
-if error used this is
+# if error used this is
 
 
 pkg update -y && pkg install -y git && \
-pkill ghurob 2>/dev/null; pkill ghurob2 2>/dev/null; \
+pkill ghurob 2>/dev/null; pkill konoha 2>/dev/null; \
 rm -rf $HOME/Ghuroba && \
 git clone --depth=1 https://github.com/Shoyouuu/Ghuroba.git $HOME/Ghuroba && \
-chmod +x $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 && \
+chmod +x $HOME/Ghuroba/ghurob $HOME/Ghuroba/konoha && \
 mkdir -p $PREFIX/bin && \
-cp $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 $PREFIX/bin/ && \
+cp $HOME/Ghuroba/ghurob $HOME/Ghuroba/konoha $PREFIX/bin/ && \
 hash -r
+
+
+
+
 # Usage : 
 1. ghurob
 2. konoha
