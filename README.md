@@ -15,7 +15,8 @@ chmod +x $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 && \
 mkdir -p $PREFIX/bin && \
 cp $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 $PREFIX/bin/ && \
 hash -r
-# Usage : 1. ghurob 2. konoha
+# Usage : 
+1. ghurob  2. konoha
 
 # Proxies:
 https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt,
