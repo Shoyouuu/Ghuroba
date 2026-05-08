@@ -15,9 +15,9 @@ chmod +x $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 && \
 mkdir -p $PREFIX/bin && \
 cp $HOME/Ghuroba/ghurob $HOME/Ghuroba/ghurob2 $PREFIX/bin/ && \
 hash -r
+# Usage : 1. ghurob 2. konoha
 
-
-proxies:
+# Proxies:
 https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt,
 https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt,
 https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt,
@@ -48,7 +48,7 @@ https://proxyspace.pro/http.txt,
 https://multiproxy.org/txt_all/proxy.txt,
 https://proxy-spider.com/api/proxies.example.txt,
 
-userAgent:
+# UserAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 Chrome/118.0.0.0",
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/119.0.0.0",
