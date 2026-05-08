@@ -24,7 +24,7 @@ hash -r
 2. konoha
 (konoha must alwys use vpn/vps)
 
-# Proxies:
+# Proxies: (only in ghurob)
 https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt,
 https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt,
 https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt,
