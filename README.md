@@ -16,13 +16,14 @@ mkdir -p $PREFIX/bin && \
 cp $HOME/Ghuroba/ghurob $HOME/Ghuroba/konoha $PREFIX/bin/ && \
 hash -r
 
-
-
-
-# Usage : 
+# Usage:
 1. ghurob
 2. konoha
 (konoha must alwys use vpn/vps)
+
+# code :
+1. CPA-SIAP
+2. shoyou
 
 # Proxies: (only in ghurob)
 https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt,
