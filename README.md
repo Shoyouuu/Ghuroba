@@ -21,10 +21,6 @@ hash -r
 2. konoha
 (konoha must alwys use vpn/vps)
 
-# code :
-1. CPA-SIAP
-2. shoyou
-
 # Proxies: (only in ghurob)
 https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt,
 https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt,
